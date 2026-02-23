@@ -1,37 +1,11 @@
+@import url('https://fonts.googleapis.com/css2?family=Urbanist:ital,wght@0,100..900;1,100..900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-    :root {
-        --primary-600: #2563eb;
-        --secondary-500: #64748b;
-    }
-
     body {
-        @apply bg-slate-50 text-slate-900 overflow-x-hidden;
-        font-family: 'Outfit', sans-serif;
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-    }
-
-    /* Custom Scrollbar for Premium Feel */
-    ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-    }
-
-    ::-webkit-scrollbar-track {
-        @apply bg-transparent;
-    }
-
-    ::-webkit-scrollbar-thumb {
-        @apply bg-slate-200 rounded-full hover:bg-slate-300 transition-colors;
-    }
-}
-
-@layer utilities {
-    .ml-68 {
-        margin-left: 17rem;
+        @apply font-['Urbanist'] antialiased text-gray-800 bg-[#f8fafc];
     }
 }

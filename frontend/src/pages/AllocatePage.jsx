@@ -1,61 +1,214 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { CheckCircle2, AlertCircle } from 'lucide-react';
+import { Play, RotateCcw, CheckCircle, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const AllocatePage = () => {
-    const [exams, setExams] = useState([]);
-    const [selectedExam, setSelectedExam] = useState('');
     const [loading, setLoading] = useState(false);
+    const [status, setStatus] = useState(null);
+    const [selectedExamIds, setSelectedExamIds] = useState([]);
+    const [exams, setExams] = useState([]);
     const { user } = useAuth();
 
     useEffect(() => {
         const fetchExams = async () => {
             try {
                 const { data } = await axios.get('http://localhost:5000/api/admin/exams', {
-                    headers: { Authorization: `Bearer ${user.token}` },
+                    headers: { Authorization: `Bearer ${user.token}` }
                 });
-                setExams(data);
+                // Sort by date ascending (oldest first for allocation flow usually)
+                setExams(data.sort((a, b) => new Date(a.examDate) - new Date(b.examDate)));
             } catch (error) {
-                toast.error('Failed to fetch exams');
+                toast.error('Failed to load exams list');
             }
         };
         fetchExams();
-    }, [user.token]);
+    }, []);
+
+    const toggleExam = (id) => {
+        setSelectedExamIds(prev =>
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        );
+    };
+
+    const handleSelectAll = (checked) => {
+        if (checked) {
+            setSelectedExamIds(exams.map(e => e._id));
+        } else {
+            setSelectedExamIds([]);
+        }
+    };
 
     const handleAllocate = async () => {
-        if (!selectedExam) return toast.error('Please select an exam');
+        if (selectedExamIds.length === 0) {
+            toast.error('Please select at least one exam');
+            return;
+        }
+
         setLoading(true);
+        setStatus(null);
         try {
-            const { data } = await axios.post('http://localhost:5000/api/allocation/allocate', { examId: selectedExam }, { headers: { Authorization: `Bearer ${user.token}` } });
+            const payload = { examIds: selectedExamIds };
+            const { data } = await axios.post('http://localhost:5000/api/allocation/allocate', payload, {
+                headers: { Authorization: `Bearer ${user.token}` }
+            });
+            setStatus({ type: 'success', message: data.message });
             toast.success(data.message);
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Allocation failed');
+            setStatus({ type: 'error', message: error.response?.data?.message || 'Allocation failed' });
+            toast.error('Allocation process failed');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleReset = async () => {
+        if (!window.confirm('WARNING: This will delete ALL current allocations. Are you sure?')) return;
+
+        setLoading(true);
+        try {
+            await axios.delete('http://localhost:5000/api/allocation/reset', {
+                headers: { Authorization: `Bearer ${user.token}` }
+            });
+            setStatus({ type: 'success', message: 'All allocations have been reset.' });
+            toast.success('System reset successful');
+        } catch (error) {
+            toast.error('Failed to reset system');
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="max-w-2xl mx-auto">
-            <h1 className="text-2xl font-bold text-gray-800 mb-8">Automatic Hall Allocation</h1>
-            <div className="bg-white p-8 rounded-xl shadow-sm">
-                <div className="flex items-start space-x-4 mb-8 p-4 bg-blue-50 text-blue-700 rounded-lg">
-                    <AlertCircle className="mt-1" size={20} />
-                    <div><p className="font-semibold">Important Note</p><p className="text-sm">This process will assign students based on dept/year. Existing allocations will be overwritten.</p></div>
-                </div>
-                <div className="mb-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Select Exam</label>
-                    <select className="w-full px-4 py-3 border rounded-lg" value={selectedExam} onChange={(e) => setSelectedExam(e.target.value)}>
-                        <option value="">-- Choose an Exam --</option>
-                        {exams.map(exam => (<option key={exam._id} value={exam._id}>{exam.examName} - {exam.department} (Year {exam.year})</option>))}
-                    </select>
-                </div>
-                <button onClick={handleAllocate} disabled={loading || !selectedExam} className={`w-full py-3 rounded-lg font-bold text-white transition ${loading || !selectedExam ? 'bg-gray-400' : 'bg-primary-600 hover:bg-primary-700'}`}>
-                    {loading ? 'Allocating...' : 'Start Allocation'}
-                </button>
+        <div className="max-w-4xl mx-auto space-y-8">
+            <div className="text-center space-y-4">
+                <h1 className="text-3xl font-black text-[#1e3a8a] uppercase tracking-tight">Seat Allocation</h1>
+                <p className="text-gray-500 max-w-lg mx-auto">Select specific exams to assign seats. The system will group concurrent exams for you.</p>
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Allocation Card */}
+                <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-blue-100 flex flex-col items-center text-center space-y-6 relative overflow-hidden group hover:scale-[1.02] transition-transform duration-300">
+                    <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-400 to-blue-600"></div>
+                    <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 mb-2">
+                        <Play size={32} className="ml-1" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-black text-gray-800 uppercase tracking-wide">Generate Allocations</h2>
+                        <p className="text-sm text-gray-400 mt-2">Pick exams below to start seat distribution.</p>
+                    </div>
+
+                    <div className="w-full space-y-4">
+                        <div className="flex flex-col gap-3 px-2">
+                            <div className="flex items-center justify-between">
+                                <label className="flex items-center space-x-2 cursor-pointer group">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedExamIds.length === exams.length && exams.length > 0}
+                                        onChange={(e) => handleSelectAll(e.target.checked)}
+                                        className="w-4 h-4 rounded border-blue-200 text-blue-600 focus:ring-blue-500"
+                                    />
+                                    <span className="text-xs font-bold text-gray-600 uppercase tracking-wider group-hover:text-blue-600 transition-colors">Select All Upcoming</span>
+                                </label>
+                                <span className="text-[10px] font-black text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full uppercase">
+                                    {selectedExamIds.length} Selected
+                                </span>
+                            </div>
+
+                            {/* Subject Quick-Select Pills */}
+                            <div className="flex flex-wrap gap-2">
+                                {[...new Set(exams.map(e => e.subject))].map(subject => {
+                                    const subjectIds = exams.filter(e => e.subject === subject).map(e => e._id);
+                                    const isTotallySelected = subjectIds.every(id => selectedExamIds.includes(id));
+                                    return (
+                                        <button
+                                            key={subject}
+                                            onClick={() => {
+                                                if (isTotallySelected) {
+                                                    setSelectedExamIds(prev => prev.filter(id => !subjectIds.includes(id)));
+                                                } else {
+                                                    setSelectedExamIds(prev => [...new Set([...prev, ...subjectIds])]);
+                                                }
+                                            }}
+                                            className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tight transition-all border ${isTotallySelected
+                                                ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
+                                                : 'bg-white border-blue-100 text-blue-600 hober:border-blue-300'
+                                                }`}
+                                        >
+                                            {subject}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        <div className="max-h-56 overflow-y-auto px-2 space-y-2 custom-scrollbar">
+                            {exams.length === 0 ? (
+                                <p className="text-sm text-gray-400 py-4 italic">No upcoming exams found.</p>
+                            ) : (
+                                exams.map(exam => (
+                                    <label
+                                        key={exam._id}
+                                        className={`flex items-start space-x-3 p-3 rounded-xl border transition-all cursor-pointer ${selectedExamIds.includes(exam._id)
+                                            ? 'bg-blue-50 border-blue-100 ring-1 ring-blue-100'
+                                            : 'bg-gray-50 border-gray-100 hover:border-blue-100'
+                                            }`}
+                                    >
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedExamIds.includes(exam._id)}
+                                            onChange={() => toggleExam(exam._id)}
+                                            className="mt-1 w-4 h-4 rounded border-blue-200 text-blue-600 focus:ring-blue-500"
+                                        />
+                                        <div className="text-left">
+                                            <p className="text-sm font-bold text-gray-800 leading-tight uppercase font-outfit">{exam.subject}</p>
+                                            <p className="text-[10px] text-gray-500 font-medium">
+                                                {new Date(exam.examDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} • {exam.session}
+                                            </p>
+                                        </div>
+                                    </label>
+                                ))
+                            )}
+                        </div>
+                    </div>
+
+                    <button
+                        onClick={handleAllocate}
+                        disabled={loading || selectedExamIds.length === 0}
+                        className="w-full py-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-widest shadow-[0_10px_20px_-10px_rgba(37,99,235,0.5)] transition-all disabled:opacity-70 disabled:grayscale disabled:cursor-not-allowed"
+                    >
+                        {loading ? 'Processing...' : 'Start Selected Allocation'}
+                    </button>
+                </div>
+
+                {/* Reset Card */}
+                <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-red-100 flex flex-col items-center text-center space-y-6 relative overflow-hidden group hover:scale-[1.02] transition-transform duration-300">
+                    <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-red-400 to-red-600"></div>
+                    <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center text-red-600 mb-2">
+                        <RotateCcw size={32} />
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-black text-gray-800 uppercase tracking-wide">Reset System</h2>
+                        <p className="text-sm text-gray-400 mt-2">Clears all current seating arrangements. Use this before starting a new exam cycle.</p>
+                    </div>
+                    <button
+                        onClick={handleReset}
+                        disabled={loading}
+                        className="w-full py-4 rounded-xl bg-white border-2 border-red-100 text-red-600 hover:bg-red-50 font-bold text-xs uppercase tracking-widest transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                    >
+                        {loading ? 'Processing...' : 'Reset All Allocations'}
+                    </button>
+                </div>
+            </div>
+
+            {status && (
+                <div className={`p-6 rounded-2xl flex items-center gap-4 ${status.type === 'success' ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-red-50 text-red-700 border border-red-100'
+                    }`}>
+                    {status.type === 'success' ? <CheckCircle size={24} /> : <AlertCircle size={24} />}
+                    <p className="font-bold">{status.message}</p>
+                </div>
+            )}
         </div>
     );
 };

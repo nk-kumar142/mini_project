@@ -15,10 +15,19 @@ const examSchema = mongoose.Schema(
             required: true,
         },
         department: {
-            type: String,
+            type: [String],
             required: true,
         },
         year: {
+            type: String,
+            required: true,
+        },
+        session: {
+            type: String,
+            enum: ['FN', 'AN'],
+            required: true,
+        },
+        time: {
             type: String,
             required: true,
         },

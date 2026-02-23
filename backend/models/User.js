@@ -19,8 +19,18 @@ const userSchema = mongoose.Schema(
         role: {
             type: String,
             required: true,
-            enum: ['admin', 'student'],
+            enum: ['admin', 'student', 'staff'],
             default: 'student',
+        },
+        staffId: {
+            type: String,
+            required: function () { return this.role === 'staff'; },
+            unique: true,
+            sparse: true,
+        },
+        subject: {
+            type: String,
+            required: function () { return this.role === 'staff'; },
         },
         registerNumber: {
             type: String,
@@ -30,11 +40,14 @@ const userSchema = mongoose.Schema(
         },
         department: {
             type: String,
-            required: function () { return this.role === 'student'; },
+            required: function () { return this.role === 'student' || this.role === 'staff'; },
         },
         year: {
             type: String,
             required: function () { return this.role === 'student'; },
+        },
+        profileImage: {
+            type: String,
         },
     },
     {
@@ -46,9 +59,9 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
     return await bcrypt.compare(enteredPassword, this.password);
 };
 
-userSchema.pre('save', async function (next) {
+userSchema.pre('save', async function () {
     if (!this.isModified('password')) {
-        next();
+        return;
     }
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);

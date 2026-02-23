@@ -17,8 +17,8 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
     }, []);
 
-    const login = async (identifier, password) => {
-        const { data } = await axios.post('http://localhost:5000/api/auth/login', { identifier, password });
+    const login = async (identifier, password, role) => {
+        const { data } = await axios.post('http://localhost:5000/api/auth/login', { identifier, password, role });
         setUser(data);
         localStorage.setItem('user', JSON.stringify(data));
         return data;
@@ -37,7 +37,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+        <AuthContext.Provider value={{ user, setUser, loading, login, register, logout }}>
             {children}
         </AuthContext.Provider>
     );

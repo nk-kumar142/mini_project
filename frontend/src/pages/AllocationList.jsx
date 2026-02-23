@@ -1,24 +1,28 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { Download, CheckCircle, Clock, User, Hash, MapPin, Calendar, ClipboardList } from 'lucide-react';
+import { Search, Download, Filter, FileText, CheckCircle, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const AllocationList = () => {
     const [allocations, setAllocations] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedSubject, setSelectedSubject] = useState('ALL');
     const { user } = useAuth();
+    const navigate = useNavigate();
+    const [viewMode, setViewMode] = useState('list'); // 'list' or 'hall'
 
     const fetchAllocations = async () => {
         try {
-            setLoading(true);
             const { data } = await axios.get('http://localhost:5000/api/allocation', {
-                headers: { Authorization: `Bearer ${user.token}` },
+                headers: { Authorization: `Bearer ${user.token}` }
             });
             setAllocations(data);
+            setLoading(false);
         } catch (error) {
-            toast.error('Failed to fetch allocations');
-        } finally {
+            toast.error('Failed to fetch allocation list');
             setLoading(false);
         }
     };
@@ -27,137 +31,297 @@ const AllocationList = () => {
         fetchAllocations();
     }, [user.token]);
 
-    const handleApprove = async (id) => {
+    const handleApproveDownload = async (id) => {
         try {
             await axios.put(`http://localhost:5000/api/allocation/${id}/approve-download`, {}, {
-                headers: { Authorization: `Bearer ${user.token}` },
+                headers: { Authorization: `Bearer ${user.token}` }
             });
-            toast.success('Download approved successfully');
+            toast.success('Download approved');
             fetchAllocations();
         } catch (error) {
-            toast.error('Failed to approve download');
-            console.error(error);
+            toast.error('Approval failed');
         }
     };
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-[60vh]">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-            </div>
-        );
-    }
+    const handleBulkApprove = async (subject) => {
+        if (!window.confirm(`Are you sure you want to approve ALL download requests for ${subject}?`)) return;
+
+        try {
+            const { data } = await axios.put('http://localhost:5000/api/allocation/approve-subject', { subject }, {
+                headers: { Authorization: `Bearer ${user.token}` }
+            });
+            toast.success(data.message);
+            fetchAllocations();
+        } catch (error) {
+            toast.error('Bulk approval failed');
+        }
+    };
+
+    // Get unique subjects for filtering
+    const subjects = ['ALL', ...new Set(allocations.map(alc => alc.examId?.subject).filter(Boolean))];
+
+    const filteredAllocations = allocations.filter(alc => {
+        const matchesSearch = alc.studentId?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            alc.studentId?.registerNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            alc.hallId?.hallName.toLowerCase().includes(searchQuery.toLowerCase());
+
+        const matchesSubject = selectedSubject === 'ALL' || alc.examId?.subject === selectedSubject;
+
+        return matchesSearch && matchesSubject;
+    });
+
+    // Group by Hall for Hall View
+    const allocationsByHall = filteredAllocations.reduce((acc, alc) => {
+        const hallName = alc.hallId?.hallName || 'Unassigned';
+        if (!acc[hallName]) acc[hallName] = [];
+        acc[hallName].push(alc);
+        return acc;
+    }, {});
+
+    // Sort halls alphabetically
+    const sortedHalls = Object.keys(allocationsByHall).sort();
 
     return (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center mb-8">
+        <div className="space-y-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Hall Allocation Management</h1>
-                    <p className="mt-2 text-sm text-gray-500">View and manage exam hall assignments and ticket download requests.</p>
+                    <h1 className="text-2xl font-black text-[#1e3a8a] uppercase tracking-tight">Allocation List</h1>
+                    <p className="text-sm font-medium text-gray-400 mt-1">
+                        {filteredAllocations.length} allocations shown
+                        {viewMode === 'hall' && ` across ${sortedHalls.length} halls`}
+                    </p>
                 </div>
-                <div className="bg-primary-50 px-4 py-2 rounded-lg border border-primary-100">
-                    <span className="text-primary-700 font-semibold">{allocations.length}</span>
-                    <span className="ml-2 text-primary-600 text-sm">Total Allocations</span>
+                <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex bg-gray-100 p-1 rounded-xl">
+                        <button
+                            onClick={() => setViewMode('list')}
+                            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'list' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                                }`}
+                        >
+                            List View
+                        </button>
+                        <button
+                            onClick={() => setViewMode('hall')}
+                            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${viewMode === 'hall' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                                }`}
+                        >
+                            Hall View
+                        </button>
+                    </div>
                 </div>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
-                <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50/50">
-                            <tr>
-                                <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
-                                    <div className="flex items-center gap-2"><User size={14} /> Student</div>
-                                </th>
-                                <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
-                                    <div className="flex items-center gap-2"><ClipboardList size={14} /> Exam & Subject</div>
-                                </th>
-                                <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">
-                                    <div className="flex items-center gap-2"><MapPin size={14} /> Hall & Seat</div>
-                                </th>
-                                <th scope="col" className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">
-                                    Status
-                                </th>
-                                <th scope="col" className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">
-                                    Action
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-100">
-                            {allocations.length === 0 ? (
-                                <tr>
-                                    <td colSpan="5" className="px-6 py-12 text-center text-gray-500 font-medium">
-                                        No allocations found. Start by allocating halls.
-                                    </td>
-                                </tr>
-                            ) : (
-                                allocations.map((alc) => {
-                                    const status = alc?.downloadRequestStatus || 'none';
-                                    return (
-                                        <tr key={alc._id} className="hover:bg-gray-50/80 transition-colors duration-200">
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="flex flex-col">
-                                                    <div className="text-sm font-bold text-gray-900">{alc.studentId?.name || 'Unknown Student'}</div>
-                                                    <div className="text-xs text-secondary-500 font-mono mt-0.5">{alc.studentId?.registerNumber || 'N/A'}</div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="flex flex-col">
-                                                    <div className="text-sm text-gray-800 font-semibold">{alc.examId?.examName || 'N/A'}</div>
-                                                    <div className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
-                                                        <Calendar size={12} /> {alc.examId?.subject || 'N/A'}
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="bg-primary-50 text-primary-700 px-2 py-1 rounded font-bold text-xs ring-1 ring-primary-100">
-                                                        {alc.hallId?.hallName || 'N/A'}
-                                                    </div>
-                                                    <div className="flex items-center gap-1 text-sm text-gray-600">
-                                                        <Hash size={14} /> <span className="font-bold">{alc.seatNumber}</span>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-center">
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ring-1 ring-inset ${status === 'approved'
-                                                        ? 'bg-green-50 text-green-700 ring-green-600/20'
-                                                        : status === 'requested'
-                                                            ? 'bg-amber-50 text-amber-700 ring-amber-600/20 animate-pulse'
-                                                            : 'bg-gray-50 text-gray-600 ring-gray-500/10'
-                                                    }`}>
-                                                    {status === 'requested' && <Clock size={12} className="mr-1" />}
-                                                    {status === 'approved' && <CheckCircle size={12} className="mr-1" />}
-                                                    {status.toUpperCase()}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                {status === 'requested' ? (
-                                                    <button
-                                                        onClick={() => handleApprove(alc._id)}
-                                                        className="inline-flex items-center gap-1.5 bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md font-bold text-xs uppercase"
-                                                    >
-                                                        <CheckCircle size={14} /> Approve
-                                                    </button>
-                                                ) : status === 'approved' ? (
-                                                    <span className="text-green-600 font-bold text-xs flex items-center justify-end gap-1">
-                                                        <CheckCircle size={14} /> READY
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-gray-400 italic text-xs">No Request</span>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    );
-                                })
-                            )}
-                        </tbody>
-                    </table>
+            <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
+                <div className="p-6 border-b border-gray-100 flex flex-wrap items-center justify-between gap-4">
+                    <div className="relative max-w-md flex-1">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                        <input
+                            type="text"
+                            placeholder="Search student, register no, or hall..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full bg-gray-50 border-none rounded-2xl py-3 pl-12 pr-4 text-sm font-bold text-gray-700 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-100"
+                        />
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mr-2">Filter By:</span>
+                        {subjects.map(sub => (
+                            <button
+                                key={sub}
+                                onClick={() => setSelectedSubject(sub)}
+                                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tight transition-all border ${selectedSubject === sub
+                                    ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
+                                    : 'bg-white border-blue-50 text-blue-600 hover:border-blue-200'
+                                    }`}
+                            >
+                                {sub === 'ALL' ? 'All Subjects' : sub}
+                            </button>
+                        ))}
+                    </div>
                 </div>
+
+                {viewMode === 'list' ? (
+                    <div className="p-6 space-y-10">
+                        {filteredAllocations.length === 0 ? (
+                            <div className="p-12 text-center text-gray-400 text-sm font-bold bg-gray-50 rounded-[2.5rem] border border-dashed border-gray-200">
+                                No allocations found matching your filters.
+                            </div>
+                        ) : (
+                            Object.entries(
+                                filteredAllocations.reduce((acc, alc) => {
+                                    const subject = alc.examId?.subject || 'Unknown Subject';
+                                    if (!acc[subject]) acc[subject] = [];
+                                    acc[subject].push(alc);
+                                    return acc;
+                                }, {})
+                            ).sort().map(([subject, subjectAllocs]) => (
+                                <div key={subject} className="space-y-4">
+                                    <div className="flex items-center justify-between px-2">
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-8 w-1.5 bg-blue-600 rounded-full"></div>
+                                            <h2 className="text-xl font-black text-gray-800 uppercase tracking-tight">
+                                                {subject}
+                                                <span className="ml-2 text-sm font-bold text-gray-400">
+                                                    ({subjectAllocs.length})
+                                                </span>
+                                            </h2>
+                                        </div>
+                                        <button
+                                            onClick={() => handleBulkApprove(subject)}
+                                            className="px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center gap-2"
+                                        >
+                                            <CheckCircle size={14} /> Approve All {subject}
+                                        </button>
+                                    </div>
+                                    <div className="overflow-x-auto bg-white rounded-[2rem] shadow-sm border border-gray-100">
+                                        <table className="w-full">
+                                            <thead className="bg-gray-50/50 border-b border-gray-100">
+                                                <tr>
+                                                    <th className="px-8 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">Student</th>
+                                                    <th className="px-8 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">Exam Details</th>
+                                                    <th className="px-8 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">Allocation</th>
+                                                    <th className="px-8 py-5 text-right text-[11px] font-black text-gray-400 uppercase tracking-widest">Download Access</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-50">
+                                                {subjectAllocs.map((alc) => (
+                                                    <tr key={alc._id} className="hover:bg-blue-50/30 transition-colors group">
+                                                        <td className="px-8 py-5">
+                                                            <div className="flex items-center gap-4">
+                                                                <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-black text-sm uppercase">
+                                                                    {alc.studentId?.name.charAt(0)}
+                                                                </div>
+                                                                <div>
+                                                                    <p className="font-bold text-gray-800 text-sm">{alc.studentId?.name}</p>
+                                                                    <p className="text-xs font-medium text-gray-500">{alc.studentId?.registerNumber}</p>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-8 py-5">
+                                                            <p className="font-bold text-gray-800 text-sm">{alc.examId?.subject}</p>
+                                                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{alc.examId?.examName}</p>
+                                                        </td>
+                                                        <td className="px-8 py-5">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-purple-50 text-purple-700 text-[10px] font-black uppercase tracking-wider">
+                                                                    Hall {alc.hallId?.hallName}
+                                                                </span>
+                                                                <span className="text-xs font-bold text-gray-500">Seat {alc.seatNumber}</span>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-8 py-5 text-right">
+                                                            {alc.downloadRequestStatus === 'approved' ? (
+                                                                <span className="inline-flex items-center gap-1 px-3 py-1 bg-green-50 text-green-600 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                                                                    <CheckCircle size={12} /> Approved
+                                                                </span>
+                                                            ) : alc.downloadRequestStatus === 'requested' ? (
+                                                                <button
+                                                                    onClick={() => handleApproveDownload(alc._id)}
+                                                                    className="inline-flex items-center gap-1 px-3 py-1 bg-orange-50 hover:bg-orange-100 text-orange-600 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors"
+                                                                >
+                                                                    Approve Request
+                                                                </button>
+                                                            ) : (
+                                                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">No Request</span>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                ) : (
+                    <div className="p-6 space-y-8">
+                        {sortedHalls.map(hallName => {
+                            const hallStudents = allocationsByHall[hallName];
+
+                            // Group by Exam Subject & Department
+                            const summaryGroup = hallStudents.reduce((acc, student) => {
+                                const key = `${student.studentId?.department} - ${student.examId?.subject}`;
+                                if (!acc[key]) {
+                                    acc[key] = {
+                                        department: student.studentId?.department,
+                                        subject: student.examId?.subject,
+                                        code: student.examId?.examName,
+                                        registerNumbers: [],
+                                        count: 0
+                                    };
+                                }
+                                acc[key].registerNumbers.push(student.studentId?.registerNumber);
+                                acc[key].count++;
+                                return acc;
+                            }, {});
+
+                            const summaryRows = Object.values(summaryGroup).sort((a, b) => a.department.localeCompare(b.department));
+
+                            return (
+                                <div key={hallName} className="border-2 border-gray-800 rounded-none overflow-hidden print:border-black print:break-inside-avoid mb-8">
+                                    <div className="bg-white px-6 py-4 border-b-2 border-gray-800 flex justify-between items-center print:border-black">
+                                        <div>
+                                            <h3
+                                                className="font-bold text-gray-900 text-lg uppercase cursor-pointer hover:text-blue-600 underline decoration-dotted decoration-gray-400 hover:decoration-blue-600 transition-colors"
+                                                onClick={() => navigate(`/admin/hall/${encodeURIComponent(hallName)}`)}
+                                                title="View Detailed Seating Chart"
+                                            >
+                                                Hall No: {hallName}
+                                            </h3>
+                                            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider print:hidden">
+                                                {hallStudents.length} Students Allocated
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full border-collapse">
+                                            <thead className="bg-gray-100 border-b-2 border-gray-800 print:bg-white print:border-black">
+                                                <tr>
+                                                    <th className="px-4 py-3 text-center text-xs font-bold text-gray-900 uppercase tracking-wider border-r border-gray-800 print:border-black w-12">S.No</th>
+                                                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider border-r border-gray-800 print:border-black w-64">Branch - Course Code</th>
+                                                    <th className="px-4 py-3 text-left text-xs font-bold text-gray-900 uppercase tracking-wider border-r border-gray-800 print:border-black">Register Nos.</th>
+                                                    <th className="px-4 py-3 text-center text-xs font-bold text-gray-900 uppercase tracking-wider w-24">No. of Candidates</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-800 print:divide-black">
+                                                {summaryRows.map((row, index) => (
+                                                    <tr key={index} className="bg-white">
+                                                        <td className="px-4 py-4 text-center text-sm font-bold text-gray-900 border-r border-gray-800 print:border-black align-top">
+                                                            {index + 1}
+                                                        </td>
+                                                        <td className="px-4 py-4 text-sm font-bold text-gray-900 border-r border-gray-800 print:border-black align-top">
+                                                            <div className="uppercase">
+                                                                {row.department}
+                                                            </div>
+                                                            <div className="text-xs font-medium text-gray-600 mt-1">
+                                                                {row.subject} ({row.code})
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-4 py-4 text-xs font-medium text-gray-800 border-r border-gray-800 print:border-black align-top leading-relaxed break-words font-mono text-justify">
+                                                            {row.registerNumbers.sort().join(', ')}
+                                                        </td>
+                                                        <td className="px-4 py-4 text-center text-lg font-bold text-gray-900 align-middle">
+                                                            {row.count}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                                <tr className="bg-gray-50 font-bold border-t-2 border-gray-800 print:bg-white print:border-black">
+                                                    <td colSpan="3" className="px-4 py-3 text-right text-sm uppercase tracking-wider border-r border-gray-800 print:border-black">Total</td>
+                                                    <td className="px-4 py-3 text-center text-lg">{hallStudents.length}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
             </div>
         </div>
     );
 };
 
 export default AllocationList;
-

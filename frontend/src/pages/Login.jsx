@@ -1,177 +1,171 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Mail, Key, User, LogIn, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, User, Shield, GraduationCap, ArrowRight, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Login = () => {
-    const [role, setRole] = useState('student');
     const [identifier, setIdentifier] = useState('');
     const [password, setPassword] = useState('');
+    const [role, setRole] = useState('student');
     const [showPassword, setShowPassword] = useState(false);
-    const [rememberMe, setRememberMe] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+
     const { login } = useAuth();
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setIsLoading(true);
         try {
-            const user = await login(identifier, password);
-            toast.success('Login successful!');
-            if (user.role === 'admin') {
-                navigate('/admin/dashboard');
-            } else {
-                navigate('/student/dashboard');
-            }
+            const user = await login(identifier, password, role);
+            toast.success(`Welcome back, ${user.name}!`);
+            if (user.role === 'admin') navigate('/admin/dashboard');
+            else if (user.role === 'staff') navigate('/staff/dashboard');
+            else navigate('/student/dashboard');
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Invalid credentials');
+            toast.error(error.response?.data?.message || 'Login failed. Please check your credentials.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const getRoleIcon = (r) => {
+        switch (r) {
+            case 'admin': return <Shield size={18} />;
+            case 'staff': return <User size={18} />;
+            default: return <GraduationCap size={18} />;
         }
     };
 
     return (
-        <div className="min-h-screen bg-[#0061f2] flex items-center justify-center p-4 md:p-8 font-sans">
-            {/* Main Rounded Card */}
-            <div className="max-w-5xl w-full bg-white rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col md:flex-row min-h-[580px]">
-
-                {/* Left Section: Blue Sidebar with 3D Spheres */}
-                <div className="md:w-5/12 bg-gradient-to-br from-[#0061f2] to-[#004bb3] p-10 md:p-14 relative overflow-hidden flex flex-col justify-center text-white">
-                    {/* Abstract 3D Spheres */}
-                    {/* Top Left Sphere */}
-                    <div className="absolute top-[-10%] left-[-15%] w-64 h-64 rounded-full bg-gradient-to-br from-blue-400 to-blue-700 shadow-[inset_-10px_-10px_30px_rgba(0,0,0,0.3),20px_20px_40px_rgba(0,0,0,0.2)]"></div>
-
-                    {/* Middle Bottom Sphere (Large) */}
-                    <div className="absolute bottom-[10%] right-[-5%] w-48 h-48 rounded-full bg-gradient-to-br from-blue-400/80 to-blue-800 shadow-[inset_-5px_-5px_20px_rgba(0,0,0,0.4),10px_10px_30px_rgba(0,0,0,0.2)] z-10"></div>
-
-                    {/* Bottom Left Sphere */}
-                    <div className="absolute bottom-[-5%] left-[5%] w-32 h-32 rounded-full bg-gradient-to-br from-blue-500 to-blue-900 shadow-[inset_-5px_-5px_15px_rgba(0,0,0,0.4)]"></div>
-
-                    {/* Content */}
-                    <div className="relative z-20">
-                        <h2 className="text-5xl font-black tracking-tight mb-2">WELCOME</h2>
-                        <h3 className="text-lg font-bold text-blue-100 uppercase tracking-widest leading-tight">
-                            Exam Hall <br /> Allocation System
-                        </h3>
-                        <p className="mt-6 text-sm text-blue-200/80 font-medium leading-relaxed max-w-xs">
-                            Access your student portal or admin desk with our secure, professional management platform.
-                        </p>
-                    </div>
-                </div>
-
-                {/* Right Section: Sign In Form */}
-                <div className="flex-1 p-8 md:p-14 flex flex-col justify-center bg-white">
-                    <div className="mb-10">
-                        <h1 className="text-4xl font-black text-gray-900 tracking-tight mb-2 italic">Sign in</h1>
-                        <p className="text-gray-400 text-sm font-medium">Access your professional account dashboard</p>
-
-                        {/* Role Selector Pills */}
-                        <div className="flex gap-4 mt-8">
-                            <button
-                                onClick={() => setRole('student')}
-                                className={`px-5 py-1.5 text-xs font-black uppercase tracking-widest rounded-full transition-all ${role === 'student' ? 'bg-[#0061f2] text-white shadow-lg shadow-blue-200' : 'bg-gray-100 text-gray-400 hover:text-gray-600'}`}
-                            >
-                                Student
-                            </button>
-                            <button
-                                onClick={() => setRole('admin')}
-                                className={`px-5 py-1.5 text-xs font-black uppercase tracking-widest rounded-full transition-all ${role === 'admin' ? 'bg-[#0061f2] text-white shadow-lg shadow-blue-200' : 'bg-gray-100 text-gray-400 hover:text-gray-600'}`}
-                            >
-                                Admin
-                            </button>
+        <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-4">
+            <div className="w-full max-w-md bg-white rounded-[2rem] shadow-xl overflow-hidden border border-gray-100">
+                <div className="p-8 md:p-10 space-y-8">
+                    <div className="text-center space-y-2">
+                        <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-6 text-blue-600">
+                            <GraduationCap size={32} />
                         </div>
+                        <h1 className="text-2xl font-black text-slate-900 tracking-tight">Exam Hall Allocation</h1>
+                        <p className="text-slate-500 font-medium">Sign in to access your secure portal</p>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        <div className="space-y-4">
-                            {/* User ID / Email Input */}
-                            <div className="relative group">
-                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#0061f2] transition-colors">
-                                    {role === 'admin' ? <Mail size={20} /> : <User size={20} />}
+                    <div className="bg-slate-50 p-1.5 rounded-2xl flex gap-1">
+                        {['student', 'staff', 'admin'].map((r) => (
+                            <button
+                                key={r}
+                                onClick={() => setRole(r)}
+                                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 capitalize ${role === r
+                                        ? 'bg-white text-blue-600 shadow-sm ring-1 ring-black/5'
+                                        : 'text-slate-400 hover:text-slate-600 hover:bg-white/50'
+                                    }`}
+                            >
+                                {getRoleIcon(r)}
+                                {r}
+                            </button>
+                        ))}
+                    </div>
+
+                    <form onSubmit={handleSubmit} className="space-y-5">
+                        {role === 'staff' && (
+                            <div className="p-4 bg-cyan-50 rounded-2xl border border-cyan-100/50 space-y-3">
+                                <div className="flex items-center gap-2 text-cyan-700 font-bold text-xs uppercase tracking-wider">
+                                    <User size={14} />
+                                    <span>Staff Login Credentials</span>
                                 </div>
+                                <div className="space-y-1.5 pl-1">
+                                    <div className="flex items-center gap-2 text-[11px] text-cyan-600/80 font-medium">
+                                        <Mail size={12} className="text-cyan-500" />
+                                        <span>Email</span>
+                                        <span className="text-slate-400 mx-1">•</span>
+                                        <span className="text-slate-600 font-bold">arun.it@staff.edu</span>
+                                        <button type="button" onClick={() => setIdentifier('arun.it@staff.edu')} className="ml-auto text-[10px] bg-white/50 px-2 py-0.5 rounded text-cyan-600 hover:bg-white transition-colors">Use</button>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-[11px] text-cyan-600/80 font-medium">
+                                        <Lock size={12} className="text-cyan-500" />
+                                        <span>Password</span>
+                                        <span className="text-slate-400 mx-1">•</span>
+                                        <span className="text-slate-600 font-bold">staff@123</span>
+                                        <button type="button" onClick={() => setPassword('staff@123')} className="ml-auto text-[10px] bg-white/50 px-2 py-0.5 rounded text-cyan-600 hover:bg-white transition-colors">Use</button>
+                                    </div>
+                                </div>
+                                <div className="pt-2 mt-2 border-t border-cyan-100 flex items-center justify-between">
+                                    <p className="text-[10px] font-bold text-cyan-600/70">No account yet? <Link to="/register" className="text-cyan-700 hover:underline">Register as Staff →</Link></p>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="space-y-4">
+                            <div className="relative group">
+                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={20} />
                                 <input
-                                    type={role === 'admin' ? 'email' : 'text'}
+                                    type="email"
                                     required
-                                    placeholder={role === 'admin' ? 'Email Address' : 'User Registration Number'}
-                                    className="w-full pl-12 pr-4 py-4 bg-[#f3f6f9] border-none rounded-xl text-gray-900 font-bold focus:ring-2 focus:ring-blue-100 transition-all placeholder-gray-400 text-sm shadow-sm"
                                     value={identifier}
                                     onChange={(e) => setIdentifier(e.target.value)}
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 pl-12 pr-4 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium text-slate-700 placeholder:text-slate-400"
+                                    placeholder={role === 'student' ? "Student email address" : "Email address"}
                                 />
                             </div>
 
-                            {/* Password Input */}
                             <div className="relative group">
-                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#0061f2] transition-colors">
-                                    <Key size={20} />
-                                </div>
+                                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-blue-500 transition-colors" size={20} />
                                 <input
-                                    type={showPassword ? 'text' : 'password'}
+                                    type={showPassword ? "text" : "password"}
                                     required
-                                    placeholder="Password"
-                                    className="w-full pl-12 pr-12 py-4 bg-[#f3f6f9] border-none rounded-xl text-gray-900 font-bold focus:ring-2 focus:ring-blue-100 transition-all placeholder-gray-400 text-sm shadow-sm"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 pl-12 pr-12 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium text-slate-700 placeholder:text-slate-400"
+                                    placeholder={role === 'student' ? "Roll Number (e.g. 7376262IT102)" : "Password"}
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-xs font-black text-[#0061f2] uppercase tracking-widest hover:text-[#004bb3]"
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
                                 >
-                                    {showPassword ? <EyeOff size={18} /> : 'SHOW'}
+                                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                                 </button>
                             </div>
                         </div>
 
-                        <div className="flex items-center justify-between text-[11px] font-black text-gray-400 uppercase tracking-widest">
-                            <label className="flex items-center gap-2 cursor-pointer hover:text-gray-600 transition-colors">
-                                <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${rememberMe ? 'bg-[#0061f2] border-blue-600' : 'bg-white border-gray-300'}`}>
-                                    <input
-                                        type="checkbox"
-                                        className="hidden"
-                                        checked={rememberMe}
-                                        onChange={(e) => setRememberMe(e.target.checked)}
-                                    />
-                                    {rememberMe && <div className="w-2 h-2 bg-white rounded-full"></div>}
-                                </div>
-                                Remember me
-                            </label>
-                            <Link to="/forgot-password" px-title="Under Protection" className="hover:text-[#0061f2] transition-colors">
-                                Forgot Password?
+                        <div className="flex items-center justify-end">
+                            <Link to="/forgot-password" className="text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline">
+                                Forgot password?
                             </Link>
                         </div>
 
-                        <div className="space-y-4 pt-4">
-                            <button
-                                type="submit"
-                                className="w-full bg-[#002f6c] text-white py-4 rounded-xl font-black text-xs uppercase tracking-[0.2em] shadow-xl shadow-blue-900/10 hover:bg-[#001d44] hover:scale-[1.01] active:scale-95 transition-all text-center"
-                            >
-                                Sig In
-                            </button>
-
-                            <div className="relative flex items-center justify-center py-2">
-                                <div className="flex-grow border-t border-gray-100"></div>
-                                <span className="flex-shrink mx-4 text-[10px] font-black text-gray-300 uppercase tracking-[0.3em]">Or</span>
-                                <div className="flex-grow border-t border-gray-100"></div>
-                            </div>
-
-                            <button
-                                type="button"
-                                className="w-full border-2 border-gray-900 text-gray-900 py-3 rounded-xl font-black text-xs uppercase tracking-widest hover:bg-gray-50 transition-all"
-                            >
-                                Sig In with other
-                            </button>
-                        </div>
-
-                        <div className="mt-8 text-center">
-                            <p className="text-xs font-bold text-gray-400">
-                                Don't have an account? {' '}
-                                <Link to="/register" className="text-[#0061f2] hover:underline uppercase tracking-widest text-[10px]">Sign Up</Link>
-                            </p>
-                        </div>
+                        <button
+                            type="submit"
+                            disabled={isLoading}
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl transition-all shadow-[0_10px_20px_-10px_rgba(37,99,235,0.5)] hover:shadow-[0_15px_25px_-10px_rgba(37,99,235,0.6)] hover:scale-[1.02] active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                            {isLoading ? (
+                                <>
+                                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    <span>Signing in...</span>
+                                </>
+                            ) : (
+                                <span>Sign In</span>
+                            )}
+                        </button>
                     </form>
+
+                    <div className="relative">
+                        <div className="absolute inset-0 flex items-center">
+                            <div className="w-full border-t border-slate-100"></div>
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                            <span className="bg-white px-4 text-slate-400 font-bold tracking-wider">Exam Hall Allocation System</span>
+                        </div>
+                    </div>
+
+                    <div className="text-center">
+                        <p className="text-sm font-medium text-slate-500">
+                            New here? <Link to="/register" className="text-blue-600 font-bold hover:underline">Create an account</Link>
+                        </p>
+                    </div>
                 </div>
             </div>
-
-            {/* Bottom-right decoration */}
-            <div className="absolute bottom-[-5%] right-[-5%] w-64 h-64 rounded-full bg-blue-500/20 blur-3xl z-0"></div>
         </div>
     );
 };

@@ -1,91 +1,102 @@
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
     LayoutDashboard, Users, Hotel, BookOpen,
-    CheckSquare, LogOut, User as UserIcon, Shield
+    CheckSquare, LogOut, User as UserIcon, Shield, List, UserCheck, FileText, BarChart2
 } from 'lucide-react';
 
 const Sidebar = () => {
     const { user, logout } = useAuth();
-    const navigate = useNavigate();
     const location = useLocation();
 
-    const handleLogout = () => {
-        logout();
-        navigate('/login');
-    };
+    const isActive = (path) => location.pathname === path;
 
     const adminLinks = [
         { name: 'Dashboard', path: '/admin/dashboard', icon: <LayoutDashboard size={18} /> },
         { name: 'Students', path: '/admin/students', icon: <Users size={18} /> },
+        { name: 'Staff', path: '/admin/staff', icon: <UserCheck size={18} /> },
         { name: 'Halls', path: '/admin/halls', icon: <Hotel size={18} /> },
         { name: 'Exams', path: '/admin/exams', icon: <BookOpen size={18} /> },
         { name: 'Allocate', path: '/admin/allocate', icon: <CheckSquare size={18} /> },
-        { name: 'Allocation List', path: '/admin/allocations', icon: <CheckSquare size={18} /> },
+        { name: 'Allocation List', path: '/admin/allocations', icon: <List size={18} /> },
+        { name: 'Gantt Chart', path: '/admin/gantt', icon: <BarChart2 size={18} /> },
     ];
 
     const studentLinks = [
         { name: 'Dashboard', path: '/student/dashboard', icon: <LayoutDashboard size={18} /> },
-        { name: 'View Allocation', path: '/student/allocation', icon: <CheckSquare size={18} /> },
+        { name: 'My Hall Tickets', path: '/student/allocation', icon: <FileText size={18} /> },
+        { name: 'Gantt Chart', path: '/student/gantt', icon: <BarChart2 size={18} /> },
     ];
 
-    const links = user?.role === 'admin' ? adminLinks : studentLinks;
+    const staffLinks = [
+        { name: 'Dashboard', path: '/staff/dashboard', icon: <LayoutDashboard size={18} /> },
+    ];
+
+    const getLinks = () => {
+        if (user?.role === 'admin') return adminLinks;
+        if (user?.role === 'staff') return staffLinks;
+        return studentLinks;
+    };
 
     return (
-        <div className="w-72 bg-white h-screen flex flex-col fixed left-0 top-0 border-r border-gray-50 z-50">
-            {/* Logo Section */}
-            <div className="px-8 py-10">
-                <div className="flex items-center gap-3">
-                    <div className="w-11 h-11 bg-white rounded-xl flex items-center justify-center text-blue-600 shadow-md border border-gray-100">
-                        <Shield size={22} fill="currentColor" className="opacity-80" />
-                    </div>
-                    <div>
-                        <h1 className="text-base font-black text-gray-900 tracking-tight leading-none">Exam Hall <span className="text-blue-500">Allocation</span></h1>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] mt-1">Allocation System</p>
-                    </div>
+        <div className="w-64 bg-[#1e3a8a] text-white flex flex-col h-screen fixed left-0 top-0 z-50 shadow-2xl">
+            <div className="p-8 flex items-center gap-3">
+                <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center backdrop-blur-sm">
+                    <Shield size={20} className="text-blue-200" />
+                </div>
+                <div>
+                    <h1 className="font-black text-lg tracking-tight">Exam Hall</h1>
+                    <p className="text-[10px] text-blue-300 font-bold uppercase tracking-widest">Allocation System</p>
                 </div>
             </div>
 
-            {/* Navigation Links */}
-            <div className="flex-1 px-4 py-2 space-y-1">
-                {links.map((link) => {
-                    const isActive = location.pathname === link.path;
-                    return (
-                        <Link
-                            key={link.name}
-                            to={link.path}
-                            className={`flex items-center space-x-3 px-5 py-3 rounded-xl transition-all duration-200 group font-bold text-[13px] ${isActive
-                                ? 'bg-[#0089d1] text-white shadow-lg shadow-blue-100'
-                                : 'text-gray-500 hover:bg-gray-50 hover:text-blue-600'
-                                }`}
-                        >
-                            <span className={`${isActive ? 'text-white' : 'text-gray-400 group-hover:text-blue-500'} transition-colors`}>
-                                {link.icon}
-                            </span>
-                            <span className="tracking-tight">{link.name}</span>
-                        </Link>
-                    );
-                })}
-            </div>
+            <nav className="flex-1 px-4 space-y-2 overflow-y-auto py-4">
+                {getLinks().map((link) => (
+                    <Link
+                        key={link.path}
+                        to={link.path}
+                        className={`flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all duration-200 group relative overflow-hidden ${isActive(link.path)
+                            ? 'bg-white text-[#1e3a8a] shadow-[0_4px_20px_-5px_rgba(0,0,0,0.2)] font-bold'
+                            : 'text-blue-100 hover:bg-white/10 hover:text-white font-medium'
+                            }`}
+                    >
+                        {isActive(link.path) && (
+                            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-[#1e3a8a] rounded-r-full" />
+                        )}
+                        <span className={`relative z-10 ${isActive(link.path) ? 'scale-110' : 'group-hover:scale-110'} transition-transform duration-200`}>
+                            {link.icon}
+                        </span>
+                        <span className="relative z-10">{link.name}</span>
+                        {isActive(link.path) && (
+                            <div className="absolute right-3 w-1.5 h-1.5 rounded-full bg-[#1e3a8a]" />
+                        )}
+                    </Link>
+                ))}
+            </nav>
 
-            {/* Footer / Profile Section */}
-            <div className="p-4 space-y-4">
-                <div className="p-4 bg-white rounded-2xl border border-gray-50 shadow-sm flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-blue-50/50 rounded-full flex items-center justify-center text-blue-600 shadow-sm">
-                        <UserIcon size={18} />
-                    </div>
-                    <div className="overflow-hidden">
-                        <p className="text-sm font-black text-gray-900 truncate tracking-tight">System Admin</p>
-                        <p className="text-[10px] text-blue-500 font-black uppercase tracking-widest">{user?.role}</p>
-                    </div>
-                </div>
-
-                <button
-                    onClick={handleLogout}
-                    className="flex items-center justify-center space-x-2 w-full px-4 py-3.5 bg-red-50/50 text-red-500 hover:bg-red-50 rounded-xl transition-all duration-200 font-black text-[11px] uppercase tracking-widest"
+            <div className="p-4 m-4 bg-[#172554] rounded-2xl border border-white/5">
+                <Link
+                    to={`/${user?.role}/profile`}
+                    className="flex items-center gap-3 mb-4 p-2 rounded-xl hover:bg-white/5 transition-all group/profile"
                 >
-                    <LogOut size={16} />
-                    <span>Sign Out</span>
+                    <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-200 border border-blue-400/20 group-hover/profile:border-blue-400/40 transition-all overflow-hidden">
+                        {user?.profileImage ? (
+                            <img src={user.profileImage} alt="Profile" className="w-full h-full object-cover" />
+                        ) : (
+                            <UserIcon size={18} />
+                        )}
+                    </div>
+                    <div className="overflow-hidden flex-1">
+                        <p className="text-sm font-bold truncate group-hover/profile:text-blue-200 transition-all">{user?.name}</p>
+                        <p className="text-[10px] text-blue-300 font-bold uppercase tracking-widest">{user?.role}</p>
+                    </div>
+                </Link>
+                <button
+                    onClick={logout}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 text-red-200 hover:text-red-100 transition-all border border-white/5 hover:border-white/10 text-xs font-bold uppercase tracking-wider group"
+                >
+                    <LogOut size={14} className="group-hover:-translate-x-1 transition-transform" />
+                    Sign Out
                 </button>
             </div>
         </div>
