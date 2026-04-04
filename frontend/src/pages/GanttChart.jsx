@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { BarChart2, Calendar, Clock, Building2, Users, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -59,8 +59,8 @@ const GanttChart = () => {
         try {
             const cfg = { headers: { Authorization: `Bearer ${user.token}` } };
             const [examRes, allocRes] = await Promise.all([
-                axios.get('http://localhost:5000/api/admin/exams', cfg),
-                axios.get('http://localhost:5000/api/allocation', cfg),
+                api.get('/admin/exams', cfg),
+                api.get('/allocation', cfg),
             ]);
             setExams(examRes.data);
             setAllocations(allocRes.data);
@@ -113,14 +113,14 @@ const GanttChart = () => {
     );
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 transition-colors">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-black text-[#1e3a8a] uppercase tracking-tight flex items-center gap-2">
+                    <h1 className="text-2xl font-black text-[#1e3a8a] dark:text-blue-400 uppercase tracking-tight flex items-center gap-2 transition-colors">
                         <BarChart2 size={24} /> Gantt Chart
                     </h1>
-                    <p className="text-sm font-medium text-gray-400 mt-1">
+                    <p className="text-sm font-medium text-gray-400 dark:text-gray-500 mt-1 transition-colors">
                         Visual timeline of exam hall allocations
                     </p>
                 </div>
@@ -129,7 +129,7 @@ const GanttChart = () => {
                     <select
                         value={selectedDate}
                         onChange={e => setSelectedDate(e.target.value)}
-                        className="bg-white border border-gray-100 rounded-xl px-4 py-2.5 text-sm font-bold text-gray-700 shadow-sm focus:ring-2 focus:ring-blue-200"
+                        className="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl px-4 py-2.5 text-sm font-bold text-gray-700 dark:text-white shadow-sm focus:ring-2 focus:ring-blue-200 dark:focus:ring-blue-500/50 transition-colors"
                     >
                         <option value="all">All Dates</option>
                         {allDates.map(d => (
@@ -140,7 +140,7 @@ const GanttChart = () => {
                     </select>
                     <button
                         onClick={fetchData}
-                        className="p-2.5 bg-white border border-gray-100 rounded-xl shadow-sm hover:bg-blue-50 text-gray-500 hover:text-blue-600 transition-colors"
+                        className="p-2.5 bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl shadow-sm hover:bg-blue-50 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                         title="Refresh"
                     >
                         <RefreshCw size={16} />
@@ -151,16 +151,16 @@ const GanttChart = () => {
             {/* Stats strip */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
-                    { icon: <Calendar size={18} />, label: 'Exam Days', value: allDates.length, color: 'text-blue-600 bg-blue-50' },
-                    { icon: <Building2 size={18} />, label: 'Halls Used', value: halls.length, color: 'text-purple-600 bg-purple-50' },
-                    { icon: <BarChart2 size={18} />, label: 'Exam Slots', value: filteredBars.length, color: 'text-emerald-600 bg-emerald-50' },
-                    { icon: <Users size={18} />, label: 'Allocations', value: filteredBars.reduce((s, b) => s + b.students.length, 0), color: 'text-orange-600 bg-orange-50' },
+                    { icon: <Calendar size={18} />, label: 'Exam Days', value: allDates.length, color: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30' },
+                    { icon: <Building2 size={18} />, label: 'Halls Used', value: halls.length, color: 'text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/30' },
+                    { icon: <BarChart2 size={18} />, label: 'Exam Slots', value: filteredBars.length, color: 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30' },
+                    { icon: <Users size={18} />, label: 'Allocations', value: filteredBars.reduce((s, b) => s + b.students.length, 0), color: 'text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30' },
                 ].map(s => (
-                    <div key={s.label} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${s.color}`}>{s.icon}</div>
+                    <div key={s.label} className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm dark:shadow-none border border-gray-100 dark:border-gray-700 flex items-center gap-3 transition-colors">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${s.color} transition-colors`}>{s.icon}</div>
                         <div>
-                            <p className="text-xl font-black text-slate-800">{s.value}</p>
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{s.label}</p>
+                            <p className="text-xl font-black text-slate-800 dark:text-white transition-colors">{s.value}</p>
+                            <p className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest transition-colors">{s.label}</p>
                         </div>
                     </div>
                 ))}
@@ -168,13 +168,13 @@ const GanttChart = () => {
 
             {/* Legend */}
             {exams.length > 0 && (
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm dark:shadow-none border border-gray-100 dark:border-gray-700 p-4 transition-colors">
                     <div className="flex items-center justify-between mb-3">
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Exam Legend (Click to Filter)</p>
+                        <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest transition-colors">Exam Legend (Click to Filter)</p>
                         {filterSubject !== 'all' && (
                             <button
                                 onClick={() => setFilterSubject('all')}
-                                className="text-[10px] font-black text-blue-600 uppercase hover:underline"
+                                className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase hover:underline transition-colors"
                             >
                                 Clear Filter
                             </button>
@@ -208,15 +208,15 @@ const GanttChart = () => {
 
             {/* Gantt Timeline */}
             {halls.length === 0 ? (
-                <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-16 text-center">
-                    <BarChart2 size={48} className="mx-auto text-gray-200 mb-4" />
-                    <p className="text-gray-400 font-bold text-sm">No allocation data to display.</p>
-                    <p className="text-gray-300 text-xs mt-1">Run the allocator first, then come back here.</p>
+                <div className="bg-white dark:bg-gray-800 rounded-[2rem] shadow-sm dark:shadow-none border border-gray-100 dark:border-gray-700 p-16 text-center transition-colors">
+                    <BarChart2 size={48} className="mx-auto text-gray-200 dark:text-gray-600 mb-4 transition-colors" />
+                    <p className="text-gray-400 dark:text-gray-500 font-bold text-sm transition-colors">No allocation data to display.</p>
+                    <p className="text-gray-300 dark:text-gray-600 text-xs mt-1 transition-colors">Run the allocator first, then come back here.</p>
                 </div>
             ) : (
-                <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
-                    <div className="p-6 border-b border-gray-100">
-                        <h2 className="text-sm font-black text-[#1e3a8a] uppercase tracking-widest">
+                <div className="bg-white dark:bg-gray-800 rounded-[2rem] shadow-sm dark:shadow-none border border-gray-100 dark:border-gray-700 overflow-hidden transition-colors">
+                    <div className="p-6 border-b border-gray-100 dark:border-gray-700 transition-colors">
+                        <h2 className="text-sm font-black text-[#1e3a8a] dark:text-blue-400 uppercase tracking-widest transition-colors">
                             Timeline — Hall × Time
                         </h2>
                     </div>
@@ -228,7 +228,7 @@ const GanttChart = () => {
                                 {HOUR_MARKS.map(m => (
                                     <div
                                         key={m}
-                                        className="absolute text-[10px] font-bold text-gray-400"
+                                        className="absolute text-[10px] font-bold text-gray-400 dark:text-gray-500 transition-colors"
                                         style={{ left: `${((m - DAY_START) / DAY_SPAN) * 100}%`, transform: 'translateX(-50%)' }}
                                     >
                                         {timeLabel(m)}
@@ -244,21 +244,21 @@ const GanttChart = () => {
                                         <div key={hall?._id} className="flex items-stretch gap-4">
                                             {/* Hall label */}
                                             <div className="w-[160px] flex-shrink-0 flex items-center">
-                                                <div className="bg-[#1e3a8a]/5 rounded-xl px-3 py-2 w-full">
-                                                    <p className="text-[11px] font-black text-[#1e3a8a] truncate">{hall?.hallName}</p>
-                                                    <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider">
+                                                <div className="bg-[#1e3a8a]/5 dark:bg-blue-900/10 rounded-xl px-3 py-2 w-full transition-colors">
+                                                    <p className="text-[11px] font-black text-[#1e3a8a] dark:text-blue-400 truncate transition-colors">{hall?.hallName}</p>
+                                                    <p className="text-[9px] text-gray-400 dark:text-gray-500 font-bold uppercase tracking-wider transition-colors">
                                                         {hallBars.reduce((s, b) => s + b.students.length, 0)} students
                                                     </p>
                                                 </div>
                                             </div>
 
                                             {/* Timeline track */}
-                                            <div className="flex-1 relative h-14 bg-gray-50 rounded-xl border border-gray-100 overflow-hidden">
+                                            <div className="flex-1 relative h-14 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-100 dark:border-gray-600 overflow-hidden transition-colors">
                                                 {/* Hour grid lines */}
                                                 {HOUR_MARKS.slice(1, -1).map(m => (
                                                     <div
                                                         key={m}
-                                                        className="absolute top-0 bottom-0 w-px bg-gray-200"
+                                                        className="absolute top-0 bottom-0 w-px bg-gray-200 dark:bg-gray-600 transition-colors"
                                                         style={{ left: `${((m - DAY_START) / DAY_SPAN) * 100}%` }}
                                                     />
                                                 ))}

@@ -6,6 +6,6 @@
 
 @layer base {
     body {
-        @apply font-['Urbanist'] antialiased text-gray-800 bg-[#f8fafc];
+        @apply font-['Urbanist'] antialiased text-gray-800 bg-[#f8fafc] dark:bg-gray-900 dark:text-gray-100 transition-colors duration-200;
     }
 }

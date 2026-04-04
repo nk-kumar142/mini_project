@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { Play, RotateCcw, CheckCircle, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -14,7 +14,7 @@ const AllocatePage = () => {
     useEffect(() => {
         const fetchExams = async () => {
             try {
-                const { data } = await axios.get('http://localhost:5000/api/admin/exams', {
+                const { data } = await api.get('/admin/exams', {
                     headers: { Authorization: `Bearer ${user.token}` }
                 });
                 // Sort by date ascending (oldest first for allocation flow usually)
@@ -50,7 +50,7 @@ const AllocatePage = () => {
         setStatus(null);
         try {
             const payload = { examIds: selectedExamIds };
-            const { data } = await axios.post('http://localhost:5000/api/allocation/allocate', payload, {
+            const { data } = await api.post('/allocation/allocate', payload, {
                 headers: { Authorization: `Bearer ${user.token}` }
             });
             setStatus({ type: 'success', message: data.message });
@@ -68,7 +68,7 @@ const AllocatePage = () => {
 
         setLoading(true);
         try {
-            await axios.delete('http://localhost:5000/api/allocation/reset', {
+            await api.delete('/allocation/reset', {
                 headers: { Authorization: `Bearer ${user.token}` }
             });
             setStatus({ type: 'success', message: 'All allocations have been reset.' });
@@ -83,20 +83,20 @@ const AllocatePage = () => {
     return (
         <div className="max-w-4xl mx-auto space-y-8">
             <div className="text-center space-y-4">
-                <h1 className="text-3xl font-black text-[#1e3a8a] uppercase tracking-tight">Seat Allocation</h1>
-                <p className="text-gray-500 max-w-lg mx-auto">Select specific exams to assign seats. The system will group concurrent exams for you.</p>
+                <h1 className="text-3xl font-black text-[#1e3a8a] dark:text-blue-400 uppercase tracking-tight transition-colors">Seat Allocation</h1>
+                <p className="text-gray-500 dark:text-gray-400 max-w-lg mx-auto transition-colors">Select specific exams to assign seats. The system will group concurrent exams for you.</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Allocation Card */}
-                <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-blue-100 flex flex-col items-center text-center space-y-6 relative overflow-hidden group hover:scale-[1.02] transition-transform duration-300">
+                <div className="bg-white dark:bg-gray-800 p-8 rounded-[2.5rem] shadow-xl dark:shadow-none border border-blue-100 dark:border-gray-700 flex flex-col items-center text-center space-y-6 relative overflow-hidden group hover:scale-[1.02] transition-all duration-300">
                     <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-400 to-blue-600"></div>
-                    <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 mb-2">
+                    <div className="w-20 h-20 bg-blue-50 dark:bg-gray-700 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400 mb-2 transition-colors">
                         <Play size={32} className="ml-1" />
                     </div>
                     <div>
-                        <h2 className="text-xl font-black text-gray-800 uppercase tracking-wide">Generate Allocations</h2>
-                        <p className="text-sm text-gray-400 mt-2">Pick exams below to start seat distribution.</p>
+                        <h2 className="text-xl font-black text-gray-800 dark:text-white uppercase tracking-wide transition-colors">Generate Allocations</h2>
+                        <p className="text-sm text-gray-400 dark:text-gray-500 mt-2 transition-colors">Pick exams below to start seat distribution.</p>
                     </div>
 
                     <div className="w-full space-y-4">
@@ -107,11 +107,11 @@ const AllocatePage = () => {
                                         type="checkbox"
                                         checked={selectedExamIds.length === exams.length && exams.length > 0}
                                         onChange={(e) => handleSelectAll(e.target.checked)}
-                                        className="w-4 h-4 rounded border-blue-200 text-blue-600 focus:ring-blue-500"
+                                        className="w-4 h-4 rounded border-blue-200 dark:border-gray-600 text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:checked:bg-blue-500 transition-colors"
                                     />
-                                    <span className="text-xs font-bold text-gray-600 uppercase tracking-wider group-hover:text-blue-600 transition-colors">Select All Upcoming</span>
+                                    <span className="text-xs font-bold text-gray-600 dark:text-gray-300 uppercase tracking-wider group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">Select All Upcoming</span>
                                 </label>
-                                <span className="text-[10px] font-black text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full uppercase">
+                                <span className="text-[10px] font-black text-blue-500 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full uppercase transition-colors">
                                     {selectedExamIds.length} Selected
                                 </span>
                             </div>
@@ -132,8 +132,8 @@ const AllocatePage = () => {
                                                 }
                                             }}
                                             className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tight transition-all border ${isTotallySelected
-                                                ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
-                                                : 'bg-white border-blue-100 text-blue-600 hober:border-blue-300'
+                                                ? 'bg-blue-600 dark:bg-blue-500 border-blue-600 dark:border-blue-500 text-white shadow-sm'
+                                                : 'bg-white dark:bg-gray-700 border-blue-100 dark:border-gray-600 text-blue-600 dark:text-blue-400 hover:border-blue-300 dark:hover:border-gray-500'
                                                 }`}
                                         >
                                             {subject}
@@ -145,25 +145,25 @@ const AllocatePage = () => {
 
                         <div className="max-h-56 overflow-y-auto px-2 space-y-2 custom-scrollbar">
                             {exams.length === 0 ? (
-                                <p className="text-sm text-gray-400 py-4 italic">No upcoming exams found.</p>
+                                <p className="text-sm text-gray-400 dark:text-gray-500 py-4 italic transition-colors">No upcoming exams found.</p>
                             ) : (
                                 exams.map(exam => (
                                     <label
                                         key={exam._id}
                                         className={`flex items-start space-x-3 p-3 rounded-xl border transition-all cursor-pointer ${selectedExamIds.includes(exam._id)
-                                            ? 'bg-blue-50 border-blue-100 ring-1 ring-blue-100'
-                                            : 'bg-gray-50 border-gray-100 hover:border-blue-100'
+                                            ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800/50 ring-1 ring-blue-100 dark:ring-blue-800/50'
+                                            : 'bg-gray-50 dark:bg-gray-700/50 border-gray-100 dark:border-gray-600 hover:border-blue-100 dark:hover:border-gray-500'
                                             }`}
                                     >
                                         <input
                                             type="checkbox"
                                             checked={selectedExamIds.includes(exam._id)}
                                             onChange={() => toggleExam(exam._id)}
-                                            className="mt-1 w-4 h-4 rounded border-blue-200 text-blue-600 focus:ring-blue-500"
+                                            className="mt-1 w-4 h-4 rounded border-blue-200 dark:border-gray-600 text-blue-600 focus:ring-blue-500 dark:bg-gray-700 dark:checked:bg-blue-500 transition-colors"
                                         />
                                         <div className="text-left">
-                                            <p className="text-sm font-bold text-gray-800 leading-tight uppercase font-outfit">{exam.subject}</p>
-                                            <p className="text-[10px] text-gray-500 font-medium">
+                                            <p className="text-sm font-bold text-gray-800 dark:text-gray-200 leading-tight uppercase font-outfit transition-colors">{exam.subject}</p>
+                                            <p className="text-[10px] text-gray-500 dark:text-gray-400 font-medium transition-colors">
                                                 {new Date(exam.examDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} • {exam.session}
                                             </p>
                                         </div>
@@ -183,19 +183,19 @@ const AllocatePage = () => {
                 </div>
 
                 {/* Reset Card */}
-                <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-red-100 flex flex-col items-center text-center space-y-6 relative overflow-hidden group hover:scale-[1.02] transition-transform duration-300">
+                <div className="bg-white dark:bg-gray-800 p-8 rounded-[2.5rem] shadow-xl dark:shadow-none border border-red-100 dark:border-gray-700 flex flex-col items-center text-center space-y-6 relative overflow-hidden group hover:scale-[1.02] transition-all duration-300">
                     <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-red-400 to-red-600"></div>
-                    <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center text-red-600 mb-2">
+                    <div className="w-20 h-20 bg-red-50 dark:bg-gray-700 rounded-full flex items-center justify-center text-red-600 dark:text-red-400 mb-2 transition-colors">
                         <RotateCcw size={32} />
                     </div>
                     <div>
-                        <h2 className="text-xl font-black text-gray-800 uppercase tracking-wide">Reset System</h2>
-                        <p className="text-sm text-gray-400 mt-2">Clears all current seating arrangements. Use this before starting a new exam cycle.</p>
+                        <h2 className="text-xl font-black text-gray-800 dark:text-white uppercase tracking-wide transition-colors">Reset System</h2>
+                        <p className="text-sm text-gray-400 dark:text-gray-500 mt-2 transition-colors">Clears all current seating arrangements. Use this before starting a new exam cycle.</p>
                     </div>
                     <button
                         onClick={handleReset}
                         disabled={loading}
-                        className="w-full py-4 rounded-xl bg-white border-2 border-red-100 text-red-600 hover:bg-red-50 font-bold text-xs uppercase tracking-widest transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                        className="w-full py-4 rounded-xl bg-white dark:bg-gray-800 border-2 border-red-100 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 font-bold text-xs uppercase tracking-widest transition-all disabled:opacity-70 disabled:cursor-not-allowed"
                     >
                         {loading ? 'Processing...' : 'Reset All Allocations'}
                     </button>
@@ -203,7 +203,7 @@ const AllocatePage = () => {
             </div>
 
             {status && (
-                <div className={`p-6 rounded-2xl flex items-center gap-4 ${status.type === 'success' ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-red-50 text-red-700 border border-red-100'
+                <div className={`p-6 rounded-2xl flex items-center gap-4 ${status.type === 'success' ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border border-green-100 dark:border-green-800/50' : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-100 dark:border-red-800/50'
                     }`}>
                     {status.type === 'success' ? <CheckCircle size={24} /> : <AlertCircle size={24} />}
                     <p className="font-bold">{status.message}</p>

@@ -2,6 +2,7 @@ const User = require('../models/User');
 const Hall = require('../models/Hall');
 const Exam = require('../models/Exam');
 const Allocation = require('../models/Allocation');
+const DutyAllocation = require('../models/DutyAllocation');
 
 // --- Email Auto-Generation Helper ---
 const DEPT_CODE_MAP = {
@@ -35,7 +36,7 @@ const getStudents = async (req, res) => {
 };
 
 const createStudent = async (req, res) => {
-    const { name, password, registerNumber, department, year } = req.body;
+    const { name, password, registerNumber, department, year, profileImage } = req.body;
     let { email } = req.body;
 
     // Auto-generate email if not provided
@@ -64,6 +65,7 @@ const createStudent = async (req, res) => {
         registerNumber,
         department,
         year,
+        profileImage: profileImage || '',
     });
     res.status(201).json(student);
 };
@@ -111,7 +113,7 @@ const bulkCreateStudents = async (req, res) => {
 };
 
 const updateStudent = async (req, res) => {
-    const { name, email, password, registerNumber, department, year } = req.body;
+    const { name, email, password, registerNumber, department, year, profileImage } = req.body;
     console.log(`Updating student ${req.params.id}:`, req.body);
     const student = await User.findById(req.params.id);
     if (student) {
@@ -119,6 +121,9 @@ const updateStudent = async (req, res) => {
         student.registerNumber = registerNumber || student.registerNumber;
         student.department = department || student.department;
         student.year = year || student.year;
+        if (profileImage !== undefined) {
+            student.profileImage = profileImage;
+        }
         // Update email if provided and different
         if (email && email.trim() && email !== student.email) {
             const emailExists = await User.findOne({ email: email.trim(), _id: { $ne: student._id } });
@@ -269,6 +274,25 @@ const deleteExam = async (req, res) => {
     }
 };
 
+const bulkDeleteExams = async (req, res) => {
+    const { ids } = req.body;
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+        res.status(400);
+        throw new Error('No exams selected for deletion');
+    }
+
+    // Cascade delete allocations for all these exams
+    await Allocation.deleteMany({ examId: { $in: ids } });
+
+    // Also delete any duty allocations associated with these exams
+    await DutyAllocation.deleteMany({ examId: { $in: ids } });
+
+    // Finally delete the exams themselves
+    await Exam.deleteMany({ _id: { $in: ids } });
+
+    res.json({ message: `${ids.length} exams and their related allocations removed` });
+};
+
 // --- Statistics ---
 const getStats = async (req, res) => {
     const totalStudents = await User.countDocuments({ role: 'student' });
@@ -319,6 +343,145 @@ const deleteStaffMember = async (req, res) => {
     res.json({ message: 'Staff deleted' });
 };
 
+// --- Staff Duty Allocation (Admin) ---
+
+const getDutyAllocations = async (req, res) => {
+    const allocations = await DutyAllocation.find({})
+        .populate('staffId', 'name staffId department subject')
+        .populate('examId', 'examName examDate subject session time')
+        .populate('hallId', 'hallName building capacity');
+    res.json(allocations);
+};
+
+const createDutyAllocation = async (req, res) => {
+    const { staffId, examId, hallId } = req.body;
+    const exists = await DutyAllocation.findOne({ staffId, examId });
+    if (exists) {
+        res.status(400);
+        throw new Error('Staff is already allocated to this exam');
+    }
+    const allocation = await DutyAllocation.create({ staffId, examId, hallId });
+    const populated = await DutyAllocation.findById(allocation._id)
+        .populate('staffId', 'name staffId department subject')
+        .populate('examId', 'examName examDate subject session time')
+        .populate('hallId', 'hallName building capacity');
+    res.status(201).json(populated);
+};
+
+const deleteDutyAllocation = async (req, res) => {
+    const allocation = await DutyAllocation.findById(req.params.id);
+    if (!allocation) {
+        res.status(404);
+        throw new Error('Duty Allocation not found');
+    }
+    await allocation.deleteOne();
+    res.json({ message: 'Duty Allocation removed' });
+};
+
+const autoAllocateDuties = async (req, res) => {
+    // 1. Get all actual exam-hall demands from student Allocation
+    const studentAllocations = await Allocation.find({});
+    const requiredDuties = []; // Array of { examId, hallId }
+
+    studentAllocations.forEach(alloc => {
+        const exists = requiredDuties.find(rd =>
+            rd.examId.toString() === alloc.examId.toString() &&
+            rd.hallId.toString() === alloc.hallId.toString()
+        );
+        if (!exists) {
+            requiredDuties.push({
+                examId: alloc.examId,
+                hallId: alloc.hallId
+            });
+        }
+    });
+
+    if (requiredDuties.length === 0) {
+        res.status(400);
+        throw new Error('No student allocations found to base staff duty upon.');
+    }
+
+    // 2. Fetch all staff members
+    const staffMembers = await User.find({ role: 'staff' });
+    if (staffMembers.length === 0) {
+        res.status(400);
+        throw new Error('No staff members found in the system.');
+    }
+
+    // 3. Keep track of current assignments
+    const currentAssignments = await DutyAllocation.find({});
+
+    let generatedCount = 0;
+
+    for (const requirement of requiredDuties) {
+        // Check if this specific hall and exam already has a staff assigned
+        const alreadyAssigned = currentAssignments.find(ca =>
+            ca.examId.toString() === requirement.examId.toString() &&
+            ca.hallId.toString() === requirement.hallId.toString()
+        );
+
+        if (alreadyAssigned) continue; // Already covered
+
+        // Find available staff members who are NOT assigned to this exam yet
+        const eligibleStaff = staffMembers.filter(staff => {
+            const isAssignedToExam = currentAssignments.some(ca =>
+                ca.staffId.toString() === staff._id.toString() &&
+                ca.examId.toString() === requirement.examId.toString()
+            );
+            return !isAssignedToExam;
+        });
+
+        // To ensure fair distribution of duties, sort staff by their current duty count (ascending)
+        eligibleStaff.sort((a, b) => {
+            const countA = currentAssignments.filter(ca => ca.staffId.toString() === a._id.toString()).length;
+            const countB = currentAssignments.filter(ca => ca.staffId.toString() === b._id.toString()).length;
+
+            if (countA !== countB) {
+                return countA - countB;
+            }
+
+            // If tied on duty count, prefer the staff member who hasn't been to this specific hall before
+            const aInHallCount = currentAssignments.filter(ca => ca.staffId.toString() === a._id.toString() && ca.hallId.toString() === requirement.hallId.toString()).length;
+            const bInHallCount = currentAssignments.filter(ca => ca.staffId.toString() === b._id.toString() && ca.hallId.toString() === requirement.hallId.toString()).length;
+
+            if (aInHallCount !== bInHallCount) {
+                return aInHallCount - bInHallCount; // Ascending: less times in this hall is better
+            }
+
+            // If still tied, random shuffle to prevent deterministic identical assignments
+            return Math.random() - 0.5;
+        });
+
+        const availableStaff = eligibleStaff[0];
+
+        if (availableStaff) {
+            // Assign them
+            const newAlloc = await DutyAllocation.create({
+                staffId: availableStaff._id,
+                examId: requirement.examId,
+                hallId: requirement.hallId
+            });
+            currentAssignments.push(newAlloc); // Add to local tracked state
+            generatedCount++;
+        }
+    }
+
+    res.json({
+        message: `Auto-allocation complete. Assigned ${generatedCount} new staff duties.`,
+        generatedCount
+    });
+};
+
+const bulkDeleteDutyAllocations = async (req, res) => {
+    const { ids } = req.body;
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+        res.status(400);
+        throw new Error('No allocations selected for deletion');
+    }
+    await DutyAllocation.deleteMany({ _id: { $in: ids } });
+    res.json({ message: `${ids.length} duty allocations removed` });
+};
+
 module.exports = {
     getStudents,
     createStudent,
@@ -333,9 +496,15 @@ module.exports = {
     createExam,
     updateExam,
     deleteExam,
+    bulkDeleteExams,
     getStats,
     getStaffList,
     createStaffMember,
     updateStaffMember,
     deleteStaffMember,
+    getDutyAllocations,
+    createDutyAllocation,
+    deleteDutyAllocation,
+    autoAllocateDuties,
+    bulkDeleteDutyAllocations,
 };

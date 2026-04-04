@@ -2,6 +2,7 @@ const Exam = require('../models/Exam');
 const Allocation = require('../models/Allocation');
 const Hall = require('../models/Hall');
 const User = require('../models/User');
+const DutyAllocation = require('../models/DutyAllocation');
 
 // @desc   Get staff dashboard stats
 // @route  GET /api/staff/stats
@@ -9,11 +10,8 @@ const User = require('../models/User');
 const getStaffStats = async (req, res) => {
     const staff = req.user;
 
-    // Exams that involve the staff's subject (if set) or all exams
-    const examFilter = staff.subject ? { subject: new RegExp(staff.subject, 'i') } : {};
-
-    const totalExams = await Exam.countDocuments(examFilter);
-    const upcomingExams = await Exam.countDocuments({ ...examFilter, examDate: { $gte: new Date() } });
+    const totalExams = await Exam.countDocuments({});
+    const upcomingExams = await Exam.countDocuments({ examDate: { $gte: new Date() } });
     const totalAllocations = await Allocation.countDocuments({});
     const totalHalls = await Hall.countDocuments({});
     const totalStudents = await User.countDocuments({ role: 'student' });
@@ -34,7 +32,7 @@ const getStaffExams = async (req, res) => {
 // @access Private/Staff
 const getStaffAllocations = async (req, res) => {
     const allocations = await Allocation.find({})
-        .populate('studentId', 'name registerNumber department year')
+        .populate('studentId', 'name registerNumber department year profileImage')
         .populate('hallId', 'hallName building capacity')
         .populate('examId', 'examName examDate subject session time department year');
     res.json(allocations);
@@ -47,5 +45,15 @@ const getStaffHalls = async (req, res) => {
     const halls = await Hall.find({});
     res.json(halls);
 };
+// @desc   Get staff duty allocations
+// @route  GET /api/staff/duty-allocations
+// @access Private/Staff
+const getStaffDutyAllocations = async (req, res) => {
+    const allocations = await DutyAllocation.find({ staffId: req.user._id })
+        .populate('examId', 'examName examDate subject session time')
+        .populate('hallId', 'hallName building capacity')
+        .sort({ createdAt: -1 });
+    res.json(allocations);
+};
 
-module.exports = { getStaffStats, getStaffExams, getStaffAllocations, getStaffHalls };
+module.exports = { getStaffStats, getStaffExams, getStaffAllocations, getStaffHalls, getStaffDutyAllocations };

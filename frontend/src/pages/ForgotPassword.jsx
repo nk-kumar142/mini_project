@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../services/api';
 import { Mail, ArrowLeft, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -13,7 +13,7 @@ const ForgotPassword = () => {
         e.preventDefault();
         setIsLoading(true);
         try {
-            await axios.post('http://localhost:5000/api/auth/forgot-password', { email });
+            await api.post('/auth/forgot-password', { email });
             setEmailSent(true);
             toast.success('Reset link sent to your email');
         } catch (error) {
@@ -24,28 +24,28 @@ const ForgotPassword = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center p-4">
-            <div className="w-full max-w-md bg-white rounded-[2rem] shadow-xl overflow-hidden border border-gray-100 p-8 md:p-10">
+        <div className="min-h-screen bg-[#f8fafc] dark:bg-gray-900 flex items-center justify-center p-4 transition-colors">
+            <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-[2rem] shadow-xl dark:shadow-none overflow-hidden border border-gray-100 dark:border-gray-700 p-8 md:p-10 transition-colors">
                 <div className="mb-8">
-                    <Link to="/login" className="inline-flex items-center gap-2 text-gray-400 hover:text-gray-600 font-bold text-xs uppercase tracking-widest transition-colors mb-6">
+                    <Link to="/login" className="inline-flex items-center gap-2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 font-bold text-xs uppercase tracking-widest transition-colors mb-6">
                         <ArrowLeft size={14} /> Back to Login
                     </Link>
-                    <h1 className="text-2xl font-black text-[#1e3a8a] tracking-tight mb-2">Forgot Password?</h1>
-                    <p className="text-gray-500 text-sm font-medium">Enter your email address and we'll send you a link to reset your password.</p>
+                    <h1 className="text-2xl font-black text-[#1e3a8a] dark:text-blue-400 tracking-tight mb-2 transition-colors">Forgot Password?</h1>
+                    <p className="text-gray-500 dark:text-gray-400 text-sm font-medium transition-colors">Enter your email address and we'll send you a link to reset your password.</p>
                 </div>
 
                 {!emailSent ? (
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="space-y-1">
-                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Email Address</label>
+                            <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest pl-1 transition-colors">Email Address</label>
                             <div className="relative group">
-                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 group-focus-within:text-blue-500 transition-colors" size={20} />
+                                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300 dark:text-gray-500 group-focus-within:text-blue-500 transition-colors" size={20} />
                                 <input
                                     type="email"
                                     required
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full bg-gray-50 border-none rounded-xl py-3.5 pl-12 pr-4 text-sm font-bold text-gray-700 placeholder:text-gray-300 focus:ring-2 focus:ring-blue-500/20"
+                                    className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-xl py-3.5 pl-12 pr-4 text-sm font-bold text-gray-700 dark:text-white placeholder:text-gray-300 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-blue-500/20 transition-colors"
                                     placeholder="john@college.edu"
                                 />
                             </div>
@@ -61,16 +61,16 @@ const ForgotPassword = () => {
                     </form>
                 ) : (
                     <div className="text-center space-y-6 py-4">
-                        <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center text-green-500 mx-auto animate-bounce">
+                        <div className="w-16 h-16 bg-green-50 dark:bg-green-900/30 rounded-full flex items-center justify-center text-green-500 dark:text-green-400 mx-auto animate-bounce transition-colors">
                             <Mail size={32} />
                         </div>
                         <div>
-                            <h2 className="text-lg font-black text-gray-800 uppercase tracking-wide">Check your email</h2>
-                            <p className="text-gray-500 text-sm font-medium mt-2">We've sent a password reset link to <br /><span className="text-blue-600 font-bold">{email}</span></p>
+                            <h2 className="text-lg font-black text-gray-800 dark:text-white uppercase tracking-wide transition-colors">Check your email</h2>
+                            <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mt-2 transition-colors">We've sent a password reset link to <br /><span className="text-blue-600 dark:text-blue-400 font-bold">{email}</span></p>
                         </div>
                         <button
                             onClick={() => setEmailSent(false)}
-                            className="text-gray-400 hover:text-gray-600 font-bold text-xs uppercase tracking-widest hover:underline"
+                            className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 font-bold text-xs uppercase tracking-widest hover:underline transition-colors"
                         >
                             Resend Email
                         </button>

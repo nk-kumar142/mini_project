@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { UserCheck, Plus, Search, Trash2, Edit2, X, Check, Filter, KeyRound } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -29,7 +29,7 @@ const ManageStaff = () => {
 
     const fetchStaff = async () => {
         try {
-            const { data } = await axios.get('http://localhost:5000/api/admin/staff', {
+            const { data } = await api.get('/admin/staff', {
                 headers: { Authorization: `Bearer ${user.token}` }
             });
             setStaffList(data);
@@ -54,10 +54,10 @@ const ManageStaff = () => {
                 const updateData = { ...formData };
                 if (!updateData.password) delete updateData.password;
 
-                await axios.put(`http://localhost:5000/api/admin/staff/${formData._id}`, updateData, config);
+                await api.put(`/admin/staff/${formData._id}`, updateData, config);
                 toast.success('Staff updated successfully');
             } else {
-                await axios.post('http://localhost:5000/api/admin/staff', formData, config);
+                await api.post('/admin/staff', formData, config);
                 toast.success('Staff added successfully');
             }
 
@@ -72,7 +72,7 @@ const ManageStaff = () => {
     const handleDelete = async (id) => {
         if (!window.confirm('Are you sure you want to remove this staff member?')) return;
         try {
-            await axios.delete(`http://localhost:5000/api/admin/staff/${id}`, {
+            await api.delete(`/admin/staff/${id}`, {
                 headers: { Authorization: `Bearer ${user.token}` }
             });
             toast.success('Staff removed successfully');
@@ -118,8 +118,8 @@ const ManageStaff = () => {
             return;
         }
         try {
-            await axios.put(
-                `http://localhost:5000/api/admin/staff/${pwdTarget._id}`,
+            await api.put(
+                `/admin/staff/${pwdTarget._id}`,
                 { password: pwdForm.newPassword },
                 { headers: { Authorization: `Bearer ${user.token}` } }
             );
@@ -151,7 +151,7 @@ const ManageStaff = () => {
         <div className="space-y-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-black text-[#1e3a8a] uppercase tracking-tight">Staff Management</h1>
+                    <h1 className="text-2xl font-black text-[#1e3a8a] dark:text-blue-400 uppercase tracking-tight transition-colors">Staff Management</h1>
                     <p className="text-sm font-medium text-gray-400 mt-1">{staffList.length} staff members registered</p>
                 </div>
                 <button
@@ -165,63 +165,63 @@ const ManageStaff = () => {
             {/* Total Staff per Department Summary */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {departments.map((dept) => (
-                    <div key={dept} className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm flex flex-col items-center">
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{dept}</p>
-                        <p className="text-2xl font-black text-blue-600 mt-1">{groupedStaff[dept].length}</p>
+                    <div key={dept} className="bg-white dark:bg-gray-800 p-5 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm dark:shadow-none flex flex-col items-center transition-colors">
+                        <p className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">{dept}</p>
+                        <p className="text-2xl font-black text-blue-600 dark:text-blue-400 mt-1">{groupedStaff[dept].length}</p>
                     </div>
                 ))}
             </div>
 
-            <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
-                <div className="p-6 border-b border-gray-100">
+            <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-sm dark:shadow-none border border-gray-100 dark:border-gray-700 overflow-hidden transition-colors">
+                <div className="p-6 border-b border-gray-100 dark:border-gray-700">
                     <div className="relative max-w-md">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={20} />
                         <input
                             type="text"
                             placeholder="Search by name, email, staff ID or subject..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full bg-gray-50 border-none rounded-2xl py-3 pl-12 pr-4 text-sm font-bold text-gray-700 placeholder:text-gray-400 focus:ring-2 focus:ring-blue-100"
+                            className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-2xl py-3 pl-12 pr-4 text-sm font-bold text-gray-700 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-500/30 transition-all"
                         />
                     </div>
                 </div>
 
                 <div className="overflow-x-auto">
                     <table className="w-full">
-                        <thead className="bg-gray-50/50">
+                        <thead className="bg-gray-50/50 dark:bg-gray-700/50">
                             <tr>
-                                <th className="px-8 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">Staff Details</th>
-                                <th className="px-8 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-widest">ID & Subject</th>
-                                <th className="px-8 py-5 text-right text-[11px] font-black text-gray-400 uppercase tracking-widest">Actions</th>
+                                <th className="px-8 py-5 text-left text-[11px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Staff Details</th>
+                                <th className="px-8 py-5 text-left text-[11px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">ID & Subject</th>
+                                <th className="px-8 py-5 text-right text-[11px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-50">
+                        <tbody className="divide-y divide-gray-50 dark:divide-gray-700">
                             {departments.map(dept => (
                                 <React.Fragment key={dept}>
-                                    <tr className="bg-blue-50/50">
-                                        <td colSpan="3" className="px-8 py-3 text-[10px] font-black text-blue-600 uppercase tracking-widest">
+                                    <tr className="bg-blue-50/50 dark:bg-blue-900/20">
+                                        <td colSpan="3" className="px-8 py-3 text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest">
                                             Department: {dept}
                                         </td>
                                     </tr>
                                     {groupedStaff[dept].map((staff) => (
-                                        <tr key={staff._id} className="hover:bg-blue-50/30 transition-colors group">
+                                        <tr key={staff._id} className="hover:bg-blue-50/30 dark:hover:bg-gray-700/50 transition-colors group">
                                             <td className="px-8 py-5">
                                                 <div className="flex items-center gap-4">
-                                                    <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-black text-sm uppercase">
+                                                    <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-gray-700 text-blue-600 dark:text-blue-400 flex items-center justify-center font-black text-sm uppercase">
                                                         {staff.name.charAt(0)}
                                                     </div>
                                                     <div>
-                                                        <p className="font-bold text-gray-800 text-sm">{staff.name}</p>
-                                                        <p className="text-xs font-medium text-gray-500">{staff.email}</p>
+                                                        <p className="font-bold text-gray-800 dark:text-white text-sm">{staff.name}</p>
+                                                        <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{staff.email}</p>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td className="px-8 py-5">
                                                 <div className="space-y-1">
-                                                    <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-gray-100 text-gray-600 text-[10px] font-black uppercase tracking-wider">
+                                                    <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-[10px] font-black uppercase tracking-wider">
                                                         {staff.staffId}
                                                     </span>
-                                                    <p className="text-xs font-bold text-gray-500">{staff.subject}</p>
+                                                    <p className="text-xs font-bold text-gray-500 dark:text-gray-400">{staff.subject}</p>
                                                 </div>
                                             </td>
                                             <td className="px-8 py-5 text-right">
@@ -230,20 +230,20 @@ const ManageStaff = () => {
                                                         <button
                                                             onClick={() => openPwdModal(staff)}
                                                             title="Change Password"
-                                                            className="p-2 text-amber-500 hover:bg-amber-50 rounded-lg transition-colors"
+                                                            className="p-2 text-amber-500 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-gray-600 rounded-lg transition-colors"
                                                         >
                                                             <KeyRound size={16} />
                                                         </button>
                                                     )}
                                                     <button
                                                         onClick={() => handleEdit(staff)}
-                                                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                                        className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-gray-600 rounded-lg transition-colors"
                                                     >
                                                         <Edit2 size={16} />
                                                     </button>
                                                     <button
                                                         onClick={() => handleDelete(staff._id)}
-                                                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                        className="p-2 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-gray-600 rounded-lg transition-colors"
                                                     >
                                                         <Trash2 size={16} />
                                                     </button>
@@ -255,7 +255,7 @@ const ManageStaff = () => {
                             ))}
                             {filteredStaff.length === 0 && (
                                 <tr>
-                                    <td colSpan="3" className="px-8 py-12 text-center text-gray-400 text-sm font-bold">
+                                    <td colSpan="3" className="px-8 py-12 text-center text-gray-400 dark:text-gray-500 text-sm font-bold">
                                         No staff members found matching your search.
                                     </td>
                                 </tr>
@@ -268,50 +268,50 @@ const ManageStaff = () => {
             {/* Modal */}
             {showModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                    <div className="bg-white rounded-[2rem] w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+                    <div className="bg-white dark:bg-gray-800 rounded-[2rem] w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl transition-colors">
                         <div className="p-8">
                             <div className="flex justify-between items-center mb-8">
-                                <h2 className="text-xl font-black text-[#1e3a8a] uppercase tracking-wide">
+                                <h2 className="text-xl font-black text-[#1e3a8a] dark:text-blue-400 uppercase tracking-wide">
                                     {isEditing ? 'Edit Staff Details' : 'Add New Staff'}
                                 </h2>
-                                <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                                    <X size={20} className="text-gray-400" />
+                                <button onClick={() => setShowModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors">
+                                    <X size={20} className="text-gray-400 dark:text-gray-500" />
                                 </button>
                             </div>
 
                             <form onSubmit={handleSubmit} className="space-y-6">
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Full Name</label>
+                                    <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest pl-1">Full Name</label>
                                     <input
                                         type="text"
                                         required
                                         value={formData.name}
                                         onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                        className="w-full bg-gray-50 border-none rounded-xl py-3.5 px-4 text-sm font-bold text-gray-700 placeholder:text-gray-300 focus:ring-2 focus:ring-blue-500/20"
+                                        className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-xl py-3.5 px-4 text-sm font-bold text-gray-700 dark:text-gray-200 placeholder:text-gray-300 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/30 transition-all"
                                         placeholder="e.g. Dr. Kumar"
                                     />
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-1">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Email Address</label>
+                                        <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest pl-1">Email Address</label>
                                         <input
                                             type="email"
                                             required
                                             value={formData.email}
                                             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                            className="w-full bg-blue-50 border-none rounded-xl py-3.5 px-4 text-sm font-bold text-gray-700 placeholder:text-gray-300 focus:ring-2 focus:ring-blue-500/20"
+                                            className="w-full bg-blue-50 dark:bg-gray-700 border-none rounded-xl py-3.5 px-4 text-sm font-bold text-gray-700 dark:text-gray-200 placeholder:text-gray-300 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/30 transition-all"
                                             placeholder="admin@example.com"
                                         />
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Password {isEditing && '(Leave blank to keep current)'}</label>
+                                        <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest pl-1">Password {isEditing && '(Leave blank to keep current)'}</label>
                                         <input
                                             type="password"
                                             required={!isEditing}
                                             value={formData.password}
                                             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                            className="w-full bg-blue-50 border-none rounded-xl py-3.5 px-4 text-sm font-bold text-gray-700 placeholder:text-gray-300 focus:ring-2 focus:ring-blue-500/20"
+                                            className="w-full bg-blue-50 dark:bg-gray-700 border-none rounded-xl py-3.5 px-4 text-sm font-bold text-gray-700 dark:text-gray-200 placeholder:text-gray-300 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/30 transition-all"
                                             placeholder="••••••••"
                                         />
                                     </div>
@@ -319,23 +319,23 @@ const ManageStaff = () => {
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-1">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Staff ID</label>
+                                        <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest pl-1">Staff ID</label>
                                         <input
                                             type="text"
                                             required
                                             value={formData.staffId}
                                             onChange={(e) => setFormData({ ...formData, staffId: e.target.value })}
-                                            className="w-full bg-gray-50 border-none rounded-xl py-3.5 px-4 text-sm font-bold text-gray-700 placeholder:text-gray-300 focus:ring-2 focus:ring-blue-500/20"
+                                            className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-xl py-3.5 px-4 text-sm font-bold text-gray-700 dark:text-gray-200 placeholder:text-gray-300 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/30 transition-all"
                                             placeholder="e.g. STAFF001"
                                         />
                                     </div>
                                     <div className="space-y-1">
-                                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Department</label>
+                                        <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest pl-1">Department</label>
                                         <select
                                             required
                                             value={formData.department}
                                             onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                                            className="w-full bg-gray-50 border-none rounded-xl py-3.5 px-4 text-sm font-bold text-gray-700 focus:ring-2 focus:ring-blue-500/20 appearance-none"
+                                            className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-xl py-3.5 px-4 text-sm font-bold text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/30 appearance-none transition-all"
                                         >
                                             <option value="">Select Department</option>
                                             <option value="IT">Information Technology</option>
@@ -351,13 +351,13 @@ const ManageStaff = () => {
                                 </div>
 
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Subject / Specialization</label>
+                                    <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest pl-1">Subject / Specialization</label>
                                     <input
                                         type="text"
                                         required
                                         value={formData.subject}
                                         onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                                        className="w-full bg-gray-50 border-none rounded-xl py-3.5 px-4 text-sm font-bold text-gray-700 placeholder:text-gray-300 focus:ring-2 focus:ring-blue-500/20"
+                                        className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-xl py-3.5 px-4 text-sm font-bold text-gray-700 dark:text-gray-200 placeholder:text-gray-300 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-500/30 transition-all"
                                         placeholder="e.g. Mathematics, Physics"
                                     />
                                 </div>
@@ -366,7 +366,7 @@ const ManageStaff = () => {
                                     <button
                                         type="button"
                                         onClick={() => setShowModal(false)}
-                                        className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-4 rounded-xl text-xs uppercase tracking-widest transition-colors"
+                                        className="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 font-bold py-4 rounded-xl text-xs uppercase tracking-widest transition-colors"
                                     >
                                         Cancel
                                     </button>
@@ -386,44 +386,44 @@ const ManageStaff = () => {
             {/* ── Change Password Modal (Admin Only) ── */}
             {showPwdModal && user?.role === 'admin' && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                    <div className="bg-white rounded-[2rem] w-full max-w-md shadow-2xl">
+                    <div className="bg-white dark:bg-gray-800 rounded-[2rem] w-full max-w-md shadow-2xl transition-colors">
                         <div className="p-8">
                             <div className="flex justify-between items-center mb-6">
                                 <div>
-                                    <h2 className="text-xl font-black text-[#1e3a8a] uppercase tracking-wide">Change Password</h2>
-                                    <p className="text-xs text-gray-400 mt-1 font-medium">For: {pwdTarget?.name}</p>
+                                    <h2 className="text-xl font-black text-[#1e3a8a] dark:text-blue-400 uppercase tracking-wide">Change Password</h2>
+                                    <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 font-medium">For: <span className="text-gray-700 dark:text-gray-300 font-bold">{pwdTarget?.name}</span></p>
                                 </div>
-                                <button onClick={() => setShowPwdModal(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                                    <X size={20} className="text-gray-400" />
+                                <button onClick={() => setShowPwdModal(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors">
+                                    <X size={20} className="text-gray-400 dark:text-gray-500" />
                                 </button>
                             </div>
 
                             {/* Admin badge */}
-                            <div className="mb-6 flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5">
-                                <KeyRound size={14} className="text-amber-500" />
-                                <span className="text-[11px] font-black text-amber-600 uppercase tracking-widest">Admin Action — Password Reset</span>
+                            <div className="mb-6 flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50 rounded-xl px-4 py-2.5">
+                                <KeyRound size={14} className="text-amber-500 dark:text-amber-400" />
+                                <span className="text-[11px] font-black text-amber-600 dark:text-amber-500 uppercase tracking-widest">Admin Action — Password Reset</span>
                             </div>
 
                             <form onSubmit={handleChangePassword} className="space-y-5">
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">New Password</label>
+                                    <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest pl-1">New Password</label>
                                     <input
                                         type="password"
                                         required
                                         value={pwdForm.newPassword}
                                         onChange={(e) => setPwdForm({ ...pwdForm, newPassword: e.target.value })}
-                                        className="w-full bg-gray-50 border-none rounded-xl py-3.5 px-4 text-sm font-bold text-gray-700 placeholder:text-gray-300 focus:ring-2 focus:ring-amber-400/30"
+                                        className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-xl py-3.5 px-4 text-sm font-bold text-gray-700 dark:text-gray-200 placeholder:text-gray-300 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-amber-400/30 transition-all"
                                         placeholder="Enter new password"
                                     />
                                 </div>
                                 <div className="space-y-1">
-                                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-1">Confirm Password</label>
+                                    <label className="text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest pl-1">Confirm Password</label>
                                     <input
                                         type="password"
                                         required
                                         value={pwdForm.confirmPassword}
                                         onChange={(e) => setPwdForm({ ...pwdForm, confirmPassword: e.target.value })}
-                                        className="w-full bg-gray-50 border-none rounded-xl py-3.5 px-4 text-sm font-bold text-gray-700 placeholder:text-gray-300 focus:ring-2 focus:ring-amber-400/30"
+                                        className="w-full bg-gray-50 dark:bg-gray-700 border-none rounded-xl py-3.5 px-4 text-sm font-bold text-gray-700 dark:text-gray-200 placeholder:text-gray-300 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-amber-400/30 transition-all"
                                         placeholder="Re-enter new password"
                                     />
                                 </div>
@@ -431,7 +431,7 @@ const ManageStaff = () => {
                                     <button
                                         type="button"
                                         onClick={() => setShowPwdModal(false)}
-                                        className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-4 rounded-xl text-xs uppercase tracking-widest transition-colors"
+                                        className="flex-1 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 font-bold py-4 rounded-xl text-xs uppercase tracking-widest transition-colors"
                                     >
                                         Cancel
                                     </button>

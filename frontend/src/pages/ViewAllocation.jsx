@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { Download, MapPin, Calendar, Clock, Lock, CheckCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -12,7 +12,7 @@ const ViewAllocation = () => {
     useEffect(() => {
         const fetchAllocation = async () => {
             try {
-                const { data } = await axios.get('http://localhost:5000/api/allocation/my-allocation', {
+                const { data } = await api.get('/allocation/my-allocation', {
                     headers: { Authorization: `Bearer ${user.token}` }
                 });
                 setAllocation(data); // Assuming returning array or single object? usually array of allocations
@@ -27,7 +27,7 @@ const ViewAllocation = () => {
 
     const handleDownload = async () => {
         try {
-            const response = await axios.get(`http://localhost:5000/api/pdf/my-hall-ticket`, {
+            const response = await api.get(`/pdf/my-hall-ticket`, {
                 headers: { Authorization: `Bearer ${user.token}` },
                 responseType: 'blob'
             });
@@ -53,112 +53,125 @@ const ViewAllocation = () => {
     const allocationsList = Array.isArray(allocation) ? allocation : (allocation ? [allocation] : []);
 
     return (
-        <div className="max-w-4xl mx-auto space-y-8 pb-10">
-            <div className="text-center">
-                <h1 className="text-3xl font-black text-[#1e3a8a] uppercase tracking-tight">Official Hall Ticket</h1>
-                <p className="text-gray-400 text-sm font-medium mt-1">Unified examination schedule and allocation details.</p>
-            </div>
-
+        <div className="max-w-5xl mx-auto pb-10">
             {allocationsList.length > 0 ? (
-                <div className="bg-white rounded-[2.5rem] shadow-2xl border border-gray-100 overflow-hidden relative">
-                    <div className="absolute top-0 left-0 w-full h-3 bg-blue-600"></div>
+                <div className="bg-[#323642] shadow-2xl overflow-hidden font-sans border border-gray-700 mx-4">
+                    {/* Header Section */}
+                    <div className="bg-[#1c2d54] text-center pt-8 pb-6 border-b-[3px] border-[#cda02c] relative">
+                        <h1 className="text-4xl font-black tracking-wider mb-2 text-[#242b35] drop-shadow-sm" style={{ textShadow: "1px 1px 0px rgba(0,0,0,0.5)" }}>
+                            EXAMINATION DEPARTMENT
+                        </h1>
+                        <h2 className="text-[#cda02c] text-xl font-bold tracking-widest mb-4 uppercase">
+                            Official Hall Ticket
+                        </h2>
+                        <p className="text-[#6484a4] text-sm">
+                            — Present this ticket at the examination hall —
+                        </p>
 
-                    <div className="p-10 space-y-10">
-                        {/* Student Info Header */}
-                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-gray-100 pb-8">
-                            <div className="space-y-2">
-                                <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em]">Student Information</p>
-                                <h2 className="text-3xl font-black text-slate-800">{user.name?.toUpperCase()}</h2>
-                                <div className="flex gap-4 text-sm font-bold text-gray-500">
-                                    <span>REG: {user.registerNumber}</span>
-                                    <span className="text-gray-200">|</span>
-                                    <span>DEPT: {user.department}</span>
-                                </div>
+                        <button
+                            onClick={handleDownload}
+                            className="absolute top-4 right-4 bg-white/5 hover:bg-white/10 text-white p-2 border border-white/10 rounded-md transition-all sm:hidden md:block"
+                            title="Download PDF"
+                        >
+                            <Download size={20} />
+                        </button>
+                    </div>
+
+                    {/* Student Information Section */}
+                    <div className="p-8 pb-6">
+                        <div className="grid grid-cols-12 gap-4">
+                            <div className="col-span-12 md:col-span-4">
+                                <h3 className="text-white text-[11px] font-bold tracking-[0.25em] mb-4">S T U D E N T I N F O R M A T I O N</h3>
+                                <p className="text-gray-400 text-xs mb-1">Name</p>
+                                <p className="text-white font-bold text-base tracking-wide uppercase">{user.name}</p>
                             </div>
-                            <button
-                                onClick={handleDownload}
-                                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-[0_10px_20px_-10px_rgba(37,99,235,0.5)] transition-all flex items-center gap-3 active:scale-95"
-                            >
-                                <Download size={18} /> Download All Subjects
-                            </button>
-                        </div>
-
-                        {/* Exam Schedule Table */}
-                        <div className="space-y-6">
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
-                                    <Calendar size={16} />
-                                </div>
-                                <h3 className="text-sm font-black text-slate-800 uppercase tracking-widest">Examination Schedule</h3>
+                            <div className="col-span-6 md:col-span-3">
+                                <div className="hidden md:block h-[28px]"></div>
+                                <p className="text-gray-400 text-xs mb-1">Register Number</p>
+                                <p className="text-white font-bold text-base">{user.registerNumber}</p>
                             </div>
-
-                            <div className="overflow-x-auto rounded-3xl border border-gray-50 bg-gray-50/30">
-                                <table className="w-full text-left border-collapse">
-                                    <thead>
-                                        <tr className="bg-slate-800 text-white">
-                                            <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Date & Session</th>
-                                            <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Subject / Exam</th>
-                                            <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest">Hall & Building</th>
-                                            <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-center">Seat</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-100">
-                                        {allocationsList.map((alc) => (
-                                            <tr key={alc._id} className="bg-white hover:bg-blue-50/30 transition-colors">
-                                                <td className="px-6 py-6">
-                                                    <div className="space-y-1">
-                                                        <p className="font-black text-slate-700">{new Date(alc.examId.examDate).toLocaleDateString()}</p>
-                                                        <p className="text-[10px] font-bold text-blue-600 uppercase italic">{alc.examId.session}</p>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-6 font-bold text-slate-600">
-                                                    <div>
-                                                        <p className="text-slate-800 font-black">{alc.examId.subject}</p>
-                                                        <p className="text-xs text-gray-400 font-medium">{alc.examId.examName}</p>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-6">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
-                                                            <MapPin size={14} />
-                                                        </div>
-                                                        <div>
-                                                            <p className="font-black text-slate-700">Hall {alc.hallId.hallName}</p>
-                                                            <p className="text-[10px] text-gray-400 font-bold uppercase">{alc.hallId.building}</p>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-6 text-center">
-                                                    <span className="text-2xl font-black text-blue-600">{alc.seatNumber}</span>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                            <div className="col-span-6 md:col-span-4">
+                                <div className="hidden md:block h-[28px]"></div>
+                                <p className="text-gray-400 text-xs mb-1">Department</p>
+                                <p className="text-white font-bold text-base">{user.department}</p>
+                            </div>
+                            <div className="col-span-12 md:col-span-1">
+                                <div className="hidden md:block h-[28px]"></div>
+                                <p className="text-gray-400 text-xs mb-1">Year</p>
+                                <p className="text-white font-bold text-base">{user.year || "3"}</p>
                             </div>
                         </div>
+                    </div>
 
-                        {/* Instructions Footer */}
-                        <div className="bg-orange-50/50 rounded-3xl p-6 border border-orange-100 flex gap-4">
-                            <div className="w-10 h-10 rounded-xl bg-orange-100 text-orange-600 flex-shrink-0 flex items-center justify-center">
-                                <CheckCircle size={20} />
-                            </div>
-                            <div className="space-y-1">
-                                <p className="text-xs font-black text-orange-800 uppercase tracking-wider">Important Instructions</p>
-                                <p className="text-xs text-orange-700/80 leading-relaxed font-medium">
-                                    Please bring your original ID card along with this hall ticket. Report to the examination hall at least 30 minutes before the scheduled time. Electronic gadgets are strictly prohibited.
-                                </p>
+                    {/* Schedule Title */}
+                    <div className="bg-[#24262E] py-2 px-8 flex justify-between items-center border-y border-[#1a1c23]">
+                        <h3 className="text-white text-[11px] font-bold tracking-[0.2em] uppercase">E X A M I N A T I O N S C H E D U L E</h3>
+                        <div className="w-4 h-6 bg-white/90"></div>
+                    </div>
+
+                    {/* Schedule Table */}
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-[#e2e8f0] text-gray-800">
+                                    <th className="px-8 py-3 text-xs font-bold tracking-wider">DATE</th>
+                                    <th className="px-6 py-3 text-xs font-bold tracking-wider">SESSION</th>
+                                    <th className="px-6 py-3 text-xs font-bold tracking-wider">TIME</th>
+                                    <th className="px-6 py-3 text-xs font-bold tracking-wider">SUBJECT</th>
+                                    <th className="px-6 py-3 text-xs font-bold tracking-wider">HALL</th>
+                                    <th className="px-6 py-3 text-xs font-bold tracking-wider">BUILDING</th>
+                                    <th className="px-8 py-3 text-xs font-bold tracking-wider text-center">SEAT</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-[#3d4251]">
+                                {allocationsList.map((alc, index) => (
+                                    <tr key={alc._id} className="bg-[#323642] hover:bg-[#393e4b] transition-colors">
+                                        <td className="px-8 py-4 text-gray-300 text-sm">
+                                            {new Date(alc.examId.examDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                        </td>
+                                        <td className="px-6 py-4 text-gray-300 text-sm">
+                                            {alc.examId.session}
+                                        </td>
+                                        <td className="px-6 py-4 text-gray-300 text-sm">
+                                            {alc.examId.time || (alc.examId.session === 'FN' ? '09:00 - 10:30' : '14:00 - 15:30')}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className="text-[#a5b9eb] font-bold text-sm">{alc.examId.subject}</span>
+                                        </td>
+                                        <td className="px-6 py-4 text-gray-400 text-sm">
+                                            {alc.hallId.hallName}
+                                        </td>
+                                        <td className="px-6 py-4 text-gray-400 text-sm">
+                                            {alc.hallId.building}
+                                        </td>
+                                        <td className="px-8 py-4 text-center">
+                                            <span className="text-[#c1cddf] font-bold text-sm">{alc.seatNumber}</span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Instructions Section */}
+                    <div className="p-8 pt-4 pb-8">
+                        <div className="bg-[#3e3422] p-4 text-[#d9b470] border-l-4 border-[#cda02c]">
+                            <h4 className="text-xs font-bold uppercase mb-2">IMPORTANT INSTRUCTIONS</h4>
+                            <div className="flex flex-wrap md:flex-nowrap gap-x-6 gap-y-2 text-[11px] font-medium tracking-wide">
+                                <span>1. Bring this hall ticket with a valid ID card to every examination.</span>
+                                <span>2. Report 30 minutes before the scheduled time.</span>
+                                <span>3. Electronic gadgets are strictly prohibited inside the hall.</span>
                             </div>
                         </div>
                     </div>
                 </div>
             ) : (
-                <div className="text-center py-20 bg-white rounded-[2.5rem] shadow-sm border border-gray-100">
-                    <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6 text-gray-300">
+                <div className="text-center py-20 bg-white dark:bg-gray-800 rounded-[2.5rem] shadow-sm dark:shadow-none border border-gray-100 dark:border-gray-700 transition-colors mx-4">
+                    <div className="w-20 h-20 bg-gray-50 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-6 text-gray-300 dark:text-gray-500 transition-colors">
                         <Lock size={32} />
                     </div>
-                    <h2 className="text-xl font-black text-gray-400 uppercase tracking-wide">No Allocations Yet</h2>
-                    <p className="text-gray-400 mt-2 max-w-xs mx-auto text-sm font-medium">Your unified hall ticket will appear here once the allocation process is completed by the admin.</p>
+                    <h2 className="text-xl font-black text-gray-400 dark:text-gray-500 uppercase tracking-wide transition-colors">No Allocations Yet</h2>
+                    <p className="text-gray-400 dark:text-gray-500 mt-2 max-w-xs mx-auto text-sm font-medium transition-colors">Your unified hall ticket will appear here once the allocation process is completed by the admin.</p>
                 </div>
             )}
         </div>
