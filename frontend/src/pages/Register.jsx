@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { User, Mail, Lock, GraduationCap, Building2, BookOpen, Eye, EyeOff } from 'lucide-react';
+import { User, Mail, Lock, GraduationCap, Building2, BookOpen, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import LogoIcon from '../components/LogoIcon';
 
@@ -71,7 +71,7 @@ const Register = () => {
     const [formData, setFormData] = useState({
         name: '', email: '', password: '', confirmPassword: '',
         registerNumber: '', department: '', year: 'I',
-        staffId: '', subject: ''
+        staffId: '', subject: '', adminKey: ''
     });
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -101,6 +101,8 @@ const Register = () => {
             } else if (role === 'staff') {
                 dataToSubmit.staffId = formData.staffId;
                 dataToSubmit.subject = formData.subject;
+            } else if (role === 'admin') {
+                dataToSubmit.adminKey = formData.adminKey;
             }
             await register(dataToSubmit);
             toast.success('Registration successful! Please login.');
@@ -178,6 +180,7 @@ const Register = () => {
                         {[
                             { key: 'student', label: 'Student', icon: <GraduationCap size={16} /> },
                             { key: 'staff', label: 'Staff', icon: <User size={16} /> },
+                            { key: 'admin', label: 'Admin', icon: <ShieldCheck size={16} /> },
                         ].map((r) => (
                             <button
                                 key={r.key}
@@ -253,7 +256,7 @@ const Register = () => {
                             <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-blue-50 dark:border-gray-700" /></div>
                             <div className="relative flex justify-center">
                                 <span className="bg-slate-50 dark:bg-gray-900 px-3 text-[9px] text-[#90a4ae] dark:text-gray-500 font-bold uppercase tracking-[0.2em] transition-colors">
-                                    {role === 'student' ? 'Student Details' : 'Staff Details'}
+                                    {role === 'student' ? 'Student Details' : role === 'staff' ? 'Staff Details' : 'Admin Verification'}
                                 </span>
                             </div>
                         </div>
@@ -282,7 +285,7 @@ const Register = () => {
                                     </select>
                                 </div>
                             </div>
-                        ) : (
+                        ) : role === 'staff' ? (
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className={labelCls}>Staff ID</label>
@@ -304,6 +307,18 @@ const Register = () => {
                                             className={inputIconCls} placeholder="Mathematics" />
                                     </div>
                                 </div>
+                            </div>
+                        ) : (
+                            <div>
+                                <label className={labelCls}>Admin Secret Key</label>
+                                <div className="relative group">
+                                    <div className="absolute left-4 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-blue-50 dark:bg-gray-700 flex items-center justify-center group-focus-within:bg-blue-200 dark:group-focus-within:bg-gray-600 transition-colors">
+                                        <ShieldCheck size={13} className="text-[#1e3a8a] dark:text-blue-400" />
+                                    </div>
+                                    <input type="password" name="adminKey" required value={formData.adminKey} onChange={handleChange}
+                                        className={inputIconCls} placeholder="Enter admin secret key" />
+                                </div>
+                                <p className="text-[10px] text-[#90a4ae] dark:text-gray-500 mt-1.5 pl-2">Contact the system owner for the admin secret key.</p>
                             </div>
                         )}
 
