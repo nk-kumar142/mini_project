@@ -77,13 +77,13 @@ app.get('/api/create-admin', async (req, res) => {
     }
 });
 
-// ONE-TIME: Bulk add students with realistic names — DELETE AFTER USE
+// ONE-TIME: Bulk add students (150 per dept) with realistic names — DELETE AFTER USE
 app.get('/api/bulk-add-students', async (req, res) => {
     try {
         const User = require('./models/User');
         
-        const firstNames = ['Aaditya', 'Arjun', 'Akash', 'Bhavya', 'Chaitanya', 'Deepak', 'Faisal', 'Gautam', 'Harsh', 'Ishaan', 'Jatin', 'Kavya', 'Lakshya', 'Manish', 'Nikhil', 'Omkar', 'Parth', 'Rahul', 'Sameer', 'Tanmay', 'Utkarsh', 'Varun', 'Yash', 'Zaid', 'Amit', 'Ankit', 'Brijesh', 'Chandra', 'Dinesh', 'Ganesh', 'Hemant', 'Inder', 'Jitendra', 'Kamal', 'Lokesh', 'Mahendra', 'Nitin', 'Pankaj', 'Rajesh', 'Suresh', 'Tarun', 'Umesh', 'Vijay', 'Yogesh'];
-        const lastNames = ['Kumar', 'Singh', 'Sharma', 'Verma', 'Gupta', 'Malhotra', 'Bhardwaj', 'Choudhary', 'Thakur', 'Yadav', 'Patel', 'Reddy', 'Nair', 'Iyer', 'Pillai', 'Joshi', 'Kulkarni', 'Deshmukh', 'Mehta', 'Shah', 'Agarwal', 'Bansal', 'Goel', 'Mittal'];
+        const firstNames = ['Aaditya', 'Arjun', 'Akash', 'Bhavya', 'Chaitanya', 'Deepak', 'Faisal', 'Gautam', 'Harsh', 'Ishaan', 'Jatin', 'Kavya', 'Lakshya', 'Manish', 'Nikhil', 'Omkar', 'Parth', 'Rahul', 'Sameer', 'Tanmay', 'Utkarsh', 'Varun', 'Yash', 'Zaid', 'Amit', 'Ankit', 'Brijesh', 'Chandra', 'Dinesh', 'Ganesh', 'Hemant', 'Inder', 'Jitendra', 'Kamal', 'Lokesh', 'Mahendra', 'Nitin', 'Pankaj', 'Rajesh', 'Suresh', 'Tarun', 'Umesh', 'Vijay', 'Yogesh', 'Abhinav', 'Alok', 'Aman', 'Arpan', 'Ayush', 'Bharat', 'Chirag', 'Darshan', 'Divyansh', 'Eshwar', 'Gaurav', 'Hardik', 'Ishwar', 'Jai', 'Kartik', 'Mayank', 'Navin', 'Pranav', 'Rishabh', 'Saurabh', 'Tushar', 'Vaibhav', 'Vivek'];
+        const lastNames = ['Kumar', 'Singh', 'Sharma', 'Verma', 'Gupta', 'Malhotra', 'Bhardwaj', 'Choudhary', 'Thakur', 'Yadav', 'Patel', 'Reddy', 'Nair', 'Iyer', 'Pillai', 'Joshi', 'Kulkarni', 'Deshmukh', 'Mehta', 'Shah', 'Agarwal', 'Bansal', 'Goel', 'Mittal', 'Pandey', 'Mishra', 'Trivedi', 'Chaturvedi', 'Saxena', 'Srivastava', 'Rao', 'Kaur', 'Gill', 'Sandhu', 'Sidhu'];
 
         const getRandomName = () => {
             const f = firstNames[Math.floor(Math.random() * firstNames.length)];
@@ -92,24 +92,28 @@ app.get('/api/bulk-add-students', async (req, res) => {
         };
 
         const departments = [
-            { name: 'Information Technology', prefix: 'IT', count: 250 },
-            { name: 'Mechanical Engineering', prefix: 'MECH', count: 50 },
-            { name: 'Civil Engineering', prefix: 'CIVIL', count: 50 },
-            { name: 'Mechatronics Engineering', prefix: 'MCT', count: 50 },
-            { name: 'Artificial Intelligence & Data Science', prefix: 'AIDS', count: 50 },
-            { name: 'Artificial Intelligence & Machine Learning', prefix: 'AIML', count: 50 },
-            { name: 'Computer Science & Engineering', prefix: 'CSE', count: 50 },
-            { name: 'Electronics & Communication Engineering', prefix: 'ECE', count: 50 },
-            { name: 'Electrical & Electronics Engineering', prefix: 'EEE', count: 50 }
+            { name: 'Information Technology', prefix: 'IT' },
+            { name: 'Mechanical Engineering', prefix: 'MECH' },
+            { name: 'Civil Engineering', prefix: 'CIVIL' },
+            { name: 'Mechatronics Engineering', prefix: 'MCT' },
+            { name: 'Artificial Intelligence & Data Science', prefix: 'AIDS' },
+            { name: 'Artificial Intelligence & Machine Learning', prefix: 'AIML' },
+            { name: 'Computer Science & Engineering', prefix: 'CSE' },
+            { name: 'Electronics & Communication Engineering', prefix: 'ECE' },
+            { name: 'Electrical & Electronics Engineering', prefix: 'EEE' }
         ];
+
+        // First, delete any generic students to start fresh with "different names"
+        await User.deleteMany({ name: /Student/ });
 
         let totalAdded = 0;
 
         for (const dept of departments) {
-            for (let i = 1; i <= dept.count; i++) {
-                const regNo = `7376262${dept.prefix}${300 + i}`;
-                const email = `${dept.prefix.toLowerCase()}${300 + i}@gmail.com`;
+            for (let i = 1; i <= 150; i++) {
+                const regNo = `7376262${dept.prefix}${1000 + i}`;
+                const email = `${dept.prefix.toLowerCase()}${1000 + i}@gmail.com`;
                 
+                // Double check existence just in case, though we deleted generic ones
                 const exists = await User.findOne({ $or: [{ email }, { registerNumber: regNo }] });
                 if (!exists) {
                     await User.create({
@@ -122,15 +126,11 @@ app.get('/api/bulk-add-students', async (req, res) => {
                         year: 'I',
                     });
                     totalAdded++;
-                } else if (exists.name.includes('Student')) {
-                    // Update generic names to realistic names
-                    exists.name = getRandomName();
-                    await exists.save();
                 }
             }
         }
         
-        res.json({ success: true, message: `✅ Bulk operation complete. Added ${totalAdded} new students and updated generic names.` });
+        res.json({ success: true, message: `✅ Bulk operation complete. Added ${totalAdded} students across all departments with realistic names.` });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
