@@ -56,23 +56,6 @@ app.get('/', (req, res) => {
     res.send('Server is live');
 });
 
-// TEMP: Fix admin password (double-hash bug) — DELETE AFTER USE
-app.get('/api/fix-admin-password', async (req, res) => {
-    try {
-        const User = require('./models/User');
-        const admin = await User.findOne({ email: 'naveen@admin.com', role: 'admin' });
-        if (!admin) {
-            return res.status(404).json({ error: 'Admin not found' });
-        }
-        // Setting password as plain text — pre-save hook will hash it correctly
-        admin.password = 'naveen1013';
-        await admin.save();
-        res.json({ success: true, message: '✅ Admin password fixed! Login with naveen@admin.com / naveen1013' });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
 // Error Middleware
 app.use(errorHandler);
 
