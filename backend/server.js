@@ -77,7 +77,7 @@ app.get('/api/create-admin', async (req, res) => {
     }
 });
 
-// ONE-TIME: Perfect cleanup & bulk add (150 students for ALL 10 departments) — DELETE AFTER USE
+// ONE-TIME: Bulk add students for ALL 4 years across ALL 10 departments — DELETE AFTER USE
 app.get('/api/bulk-add-students', async (req, res) => {
     try {
         const User = require('./models/User');
@@ -105,39 +105,50 @@ app.get('/api/bulk-add-students', async (req, res) => {
             { name: 'Computer Science & Business System', prefix: 'CSBS' }
         ];
 
-        // 1. DELETE ALL EXISTING STUDENTS FIRST to ensure exactly 150 per dept
+        const yearCounts = [
+            { year: 'I', count: 250 },
+            { year: 'II', count: 300 },
+            { year: 'III', count: 259 },
+            { year: 'IV', count: 310 }
+        ];
+
+        // 1. DELETE ALL EXISTING STUDENTS
         await User.deleteMany({ role: 'student' });
 
-        // 2. Prepare bulk insert
+        // 2. Prepare salt and hash once for student123
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash('student123', salt);
-        const studentsToCreate = [];
 
+        let totalAdded = 0;
+
+        // 3. Populate each department (Process in smaller batches to avoid Vercel timeouts if possible)
         for (const dept of departments) {
-            for (let i = 1; i <= 150; i++) {
-                const regNo = `7376262${dept.prefix}${2000 + i}`;
-                const email = `${dept.prefix.toLowerCase()}${2000 + i}@gmail.com`;
-                
-                studentsToCreate.push({
-                    name: getRandomName(),
-                    email: email,
-                    password: hashedPassword,
-                    role: 'student',
-                    registerNumber: regNo,
-                    department: dept.name,
-                    year: 'I',
-                });
+            const studentsBatch = [];
+            for (const yearInfo of yearCounts) {
+                for (let i = 1; i <= yearInfo.count; i++) {
+                    const regNo = `7376262${dept.prefix}${yearInfo.year}${3000 + i}`;
+                    const email = `${dept.prefix.toLowerCase()}${yearInfo.year.toLowerCase()}${3000 + i}@gmail.com`;
+                    
+                    studentsBatch.push({
+                        name: getRandomName(),
+                        email: email,
+                        password: hashedPassword,
+                        role: 'student',
+                        registerNumber: regNo,
+                        department: dept.name,
+                        year: yearInfo.year,
+                    });
+                }
             }
-        }
-
-        // 3. Optimized Bulk Create
-        if (studentsToCreate.length > 0) {
-            await User.insertMany(studentsToCreate);
+            if (studentsBatch.length > 0) {
+                await User.insertMany(studentsBatch);
+                totalAdded += studentsBatch.length;
+            }
         }
         
         res.json({ 
             success: true, 
-            message: `✅ Perfect population complete! Each department now has exactly 150 students with unique names. Total students: ${studentsToCreate.length}` 
+            message: `✅ Massive population complete! Total students: ${totalAdded} added across all 10 departments and 4 years.` 
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
