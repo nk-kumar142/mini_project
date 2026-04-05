@@ -11,13 +11,22 @@ const generateToken = (id) => {
 // @route   POST /api/auth/register
 // @access  Public
 const registerUser = async (req, res) => {
-    const { name, email, password, role, registerNumber, department, year, staffId, subject } = req.body;
+    const { name, email, password, role, registerNumber, department, year, staffId, subject, adminKey } = req.body;
 
     const userExists = await User.findOne({ email });
 
     if (userExists) {
         res.status(400);
         throw new Error('User already exists');
+    }
+
+    // Block admin self-registration without the secret key
+    if (role === 'admin') {
+        const secretKey = process.env.ADMIN_SECRET_KEY;
+        if (!secretKey || adminKey !== secretKey) {
+            res.status(403);
+            throw new Error('Invalid admin secret key. Access denied.');
+        }
     }
 
     const userData = {
