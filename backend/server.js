@@ -77,7 +77,7 @@ app.get('/api/create-admin', async (req, res) => {
     }
 });
 
-// ONE-TIME: Bulk add students (150 per dept) with realistic names — DELETE AFTER USE
+// ONE-TIME: Perfect cleanup & bulk add (150 students for ALL 10 departments) — DELETE AFTER USE
 app.get('/api/bulk-add-students', async (req, res) => {
     try {
         const User = require('./models/User');
@@ -101,20 +101,22 @@ app.get('/api/bulk-add-students', async (req, res) => {
             { name: 'Artificial Intelligence & Machine Learning', prefix: 'AIML' },
             { name: 'Computer Science & Engineering', prefix: 'CSE' },
             { name: 'Electronics & Communication Engineering', prefix: 'ECE' },
-            { name: 'Electrical & Electronics Engineering', prefix: 'EEE' }
+            { name: 'Electrical & Electronics Engineering', prefix: 'EEE' },
+            { name: 'Computer Science & Business System', prefix: 'CSBS' }
         ];
 
-        // Delete any generic students
-        await User.deleteMany({ name: /Student/ });
+        // 1. DELETE ALL EXISTING STUDENTS FIRST to ensure exactly 150 per dept
+        await User.deleteMany({ role: 'student' });
 
+        // 2. Prepare bulk insert
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash('student123', salt);
         const studentsToCreate = [];
 
         for (const dept of departments) {
             for (let i = 1; i <= 150; i++) {
-                const regNo = `7376262${dept.prefix}${1000 + i}`;
-                const email = `${dept.prefix.toLowerCase()}${1000 + i}@gmail.com`;
+                const regNo = `7376262${dept.prefix}${2000 + i}`;
+                const email = `${dept.prefix.toLowerCase()}${2000 + i}@gmail.com`;
                 
                 studentsToCreate.push({
                     name: getRandomName(),
@@ -128,17 +130,15 @@ app.get('/api/bulk-add-students', async (req, res) => {
             }
         }
 
-        // Use insertMany for speed, but filter out ones that already exist by checking regNo
-        // This is a bit tricky with insertMany if some exist, but since it's a one-time thing 
-        // and we delete "Student" names, we can just filter out based on current emails in DB.
-        const existingEmails = (await User.find({}, { email: 1 })).map(u => u.email);
-        const filteredStudents = studentsToCreate.filter(s => !existingEmails.includes(s.email));
-
-        if (filteredStudents.length > 0) {
-            await User.insertMany(filteredStudents);
+        // 3. Optimized Bulk Create
+        if (studentsToCreate.length > 0) {
+            await User.insertMany(studentsToCreate);
         }
         
-        res.json({ success: true, message: `✅ Bulk operation complete. Optimized add of ${filteredStudents.length} students across all departments.` });
+        res.json({ 
+            success: true, 
+            message: `✅ Perfect population complete! Each department now has exactly 150 students with unique names. Total students: ${studentsToCreate.length}` 
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
