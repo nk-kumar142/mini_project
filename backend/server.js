@@ -39,7 +39,7 @@ app.use('/api/staff', staffRoutes);
 
 // Root route
 app.get('/', (req, res) => {
-    res.send('Exam Hall Allocation API is running...');
+    res.send('Server is live');
 });
 
 // Error Middleware
