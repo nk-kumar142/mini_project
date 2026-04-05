@@ -81,6 +81,7 @@ app.get('/api/create-admin', async (req, res) => {
 app.get('/api/bulk-add-students', async (req, res) => {
     try {
         const User = require('./models/User');
+        const bcrypt = require('bcryptjs');
         
         const firstNames = ['Aaditya', 'Arjun', 'Akash', 'Bhavya', 'Chaitanya', 'Deepak', 'Faisal', 'Gautam', 'Harsh', 'Ishaan', 'Jatin', 'Kavya', 'Lakshya', 'Manish', 'Nikhil', 'Omkar', 'Parth', 'Rahul', 'Sameer', 'Tanmay', 'Utkarsh', 'Varun', 'Yash', 'Zaid', 'Amit', 'Ankit', 'Brijesh', 'Chandra', 'Dinesh', 'Ganesh', 'Hemant', 'Inder', 'Jitendra', 'Kamal', 'Lokesh', 'Mahendra', 'Nitin', 'Pankaj', 'Rajesh', 'Suresh', 'Tarun', 'Umesh', 'Vijay', 'Yogesh', 'Abhinav', 'Alok', 'Aman', 'Arpan', 'Ayush', 'Bharat', 'Chirag', 'Darshan', 'Divyansh', 'Eshwar', 'Gaurav', 'Hardik', 'Ishwar', 'Jai', 'Kartik', 'Mayank', 'Navin', 'Pranav', 'Rishabh', 'Saurabh', 'Tushar', 'Vaibhav', 'Vivek'];
         const lastNames = ['Kumar', 'Singh', 'Sharma', 'Verma', 'Gupta', 'Malhotra', 'Bhardwaj', 'Choudhary', 'Thakur', 'Yadav', 'Patel', 'Reddy', 'Nair', 'Iyer', 'Pillai', 'Joshi', 'Kulkarni', 'Deshmukh', 'Mehta', 'Shah', 'Agarwal', 'Bansal', 'Goel', 'Mittal', 'Pandey', 'Mishra', 'Trivedi', 'Chaturvedi', 'Saxena', 'Srivastava', 'Rao', 'Kaur', 'Gill', 'Sandhu', 'Sidhu'];
@@ -103,34 +104,41 @@ app.get('/api/bulk-add-students', async (req, res) => {
             { name: 'Electrical & Electronics Engineering', prefix: 'EEE' }
         ];
 
-        // First, delete any generic students to start fresh with "different names"
+        // Delete any generic students
         await User.deleteMany({ name: /Student/ });
 
-        let totalAdded = 0;
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash('student123', salt);
+        const studentsToCreate = [];
 
         for (const dept of departments) {
             for (let i = 1; i <= 150; i++) {
                 const regNo = `7376262${dept.prefix}${1000 + i}`;
                 const email = `${dept.prefix.toLowerCase()}${1000 + i}@gmail.com`;
                 
-                // Double check existence just in case, though we deleted generic ones
-                const exists = await User.findOne({ $or: [{ email }, { registerNumber: regNo }] });
-                if (!exists) {
-                    await User.create({
-                        name: getRandomName(),
-                        email: email,
-                        password: 'student123',
-                        role: 'student',
-                        registerNumber: regNo,
-                        department: dept.name,
-                        year: 'I',
-                    });
-                    totalAdded++;
-                }
+                studentsToCreate.push({
+                    name: getRandomName(),
+                    email: email,
+                    password: hashedPassword,
+                    role: 'student',
+                    registerNumber: regNo,
+                    department: dept.name,
+                    year: 'I',
+                });
             }
         }
+
+        // Use insertMany for speed, but filter out ones that already exist by checking regNo
+        // This is a bit tricky with insertMany if some exist, but since it's a one-time thing 
+        // and we delete "Student" names, we can just filter out based on current emails in DB.
+        const existingEmails = (await User.find({}, { email: 1 })).map(u => u.email);
+        const filteredStudents = studentsToCreate.filter(s => !existingEmails.includes(s.email));
+
+        if (filteredStudents.length > 0) {
+            await User.insertMany(filteredStudents);
+        }
         
-        res.json({ success: true, message: `✅ Bulk operation complete. Added ${totalAdded} students across all departments with realistic names.` });
+        res.json({ success: true, message: `✅ Bulk operation complete. Optimized add of ${filteredStudents.length} students across all departments.` });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
