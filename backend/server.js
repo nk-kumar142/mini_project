@@ -77,6 +77,65 @@ app.get('/api/create-admin', async (req, res) => {
     }
 });
 
+// ONE-TIME: Bulk add students — DELETE AFTER USE
+app.get('/api/bulk-add-students', async (req, res) => {
+    try {
+        const User = require('./models/User');
+        const students = [];
+        
+        // Add 250 students to IT first year
+        for (let i = 1; i <= 250; i++) {
+            const regNo = `7376262IT${301 + i}`;
+            students.push({
+                name: `IT Student ${i}`,
+                email: `itstudent${i}@it.com`,
+                password: 'student123',
+                role: 'student',
+                registerNumber: regNo,
+                department: 'Information Technology',
+                year: 'I',
+            });
+        }
+
+        // Add 10 students to each of the other departments
+        const otherDepts = [
+            'Mechanical Engineering', 'Civil Engineering', 'Mechatronics Engineering',
+            'Artificial Intelligence & Data Science', 'Artificial Intelligence & Machine Learning',
+            'Computer Science & Engineering', 'Electronics & Communication Engineering',
+            'Electrical & Electronics Engineering'
+        ];
+
+        otherDepts.forEach((dept, index) => {
+            const prefix = dept.split(' ').map(w => w[0]).join('').toUpperCase();
+            for (let i = 1; i <= 10; i++) {
+                students.push({
+                    name: `${prefix} Student ${i}`,
+                    email: `${prefix.toLowerCase()}student${i}@${prefix.toLowerCase()}.com`,
+                    password: 'student123',
+                    role: 'student',
+                    registerNumber: `7376262${prefix}${100 + i}`,
+                    department: dept,
+                    year: 'I',
+                });
+            }
+        });
+
+        // Loop through and create each student to ensure passwords get hashed
+        // Using Promise.all with chunks or just a loop for simplicity in a one-time route
+        for (const studentData of students) {
+            // Check if already exists to avoid errors on duplicate regNo or email
+            const exists = await User.findOne({ $or: [{ email: studentData.email }, { registerNumber: studentData.registerNumber }] });
+            if (!exists) {
+                await User.create(studentData);
+            }
+        }
+        
+        res.json({ success: true, message: `✅ Successfully ensured 250 IT students and extra students for other departments exist.` });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Error Middleware
 app.use(errorHandler);
 
