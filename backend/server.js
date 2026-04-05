@@ -77,60 +77,60 @@ app.get('/api/create-admin', async (req, res) => {
     }
 });
 
-// ONE-TIME: Bulk add students — DELETE AFTER USE
+// ONE-TIME: Bulk add students with realistic names — DELETE AFTER USE
 app.get('/api/bulk-add-students', async (req, res) => {
     try {
         const User = require('./models/User');
-        const students = [];
         
-        // Add 250 students to IT first year
-        for (let i = 1; i <= 250; i++) {
-            const regNo = `7376262IT${301 + i}`;
-            students.push({
-                name: `IT Student ${i}`,
-                email: `itstudent${i}@it.com`,
-                password: 'student123',
-                role: 'student',
-                registerNumber: regNo,
-                department: 'Information Technology',
-                year: 'I',
-            });
-        }
+        const firstNames = ['Aaditya', 'Arjun', 'Akash', 'Bhavya', 'Chaitanya', 'Deepak', 'Faisal', 'Gautam', 'Harsh', 'Ishaan', 'Jatin', 'Kavya', 'Lakshya', 'Manish', 'Nikhil', 'Omkar', 'Parth', 'Rahul', 'Sameer', 'Tanmay', 'Utkarsh', 'Varun', 'Yash', 'Zaid', 'Amit', 'Ankit', 'Brijesh', 'Chandra', 'Dinesh', 'Ganesh', 'Hemant', 'Inder', 'Jitendra', 'Kamal', 'Lokesh', 'Mahendra', 'Nitin', 'Pankaj', 'Rajesh', 'Suresh', 'Tarun', 'Umesh', 'Vijay', 'Yogesh'];
+        const lastNames = ['Kumar', 'Singh', 'Sharma', 'Verma', 'Gupta', 'Malhotra', 'Bhardwaj', 'Choudhary', 'Thakur', 'Yadav', 'Patel', 'Reddy', 'Nair', 'Iyer', 'Pillai', 'Joshi', 'Kulkarni', 'Deshmukh', 'Mehta', 'Shah', 'Agarwal', 'Bansal', 'Goel', 'Mittal'];
 
-        // Add 10 students to each of the other departments
-        const otherDepts = [
-            'Mechanical Engineering', 'Civil Engineering', 'Mechatronics Engineering',
-            'Artificial Intelligence & Data Science', 'Artificial Intelligence & Machine Learning',
-            'Computer Science & Engineering', 'Electronics & Communication Engineering',
-            'Electrical & Electronics Engineering'
+        const getRandomName = () => {
+            const f = firstNames[Math.floor(Math.random() * firstNames.length)];
+            const l = lastNames[Math.floor(Math.random() * lastNames.length)];
+            return `${f} ${l}`;
+        };
+
+        const departments = [
+            { name: 'Information Technology', prefix: 'IT', count: 250 },
+            { name: 'Mechanical Engineering', prefix: 'MECH', count: 50 },
+            { name: 'Civil Engineering', prefix: 'CIVIL', count: 50 },
+            { name: 'Mechatronics Engineering', prefix: 'MCT', count: 50 },
+            { name: 'Artificial Intelligence & Data Science', prefix: 'AIDS', count: 50 },
+            { name: 'Artificial Intelligence & Machine Learning', prefix: 'AIML', count: 50 },
+            { name: 'Computer Science & Engineering', prefix: 'CSE', count: 50 },
+            { name: 'Electronics & Communication Engineering', prefix: 'ECE', count: 50 },
+            { name: 'Electrical & Electronics Engineering', prefix: 'EEE', count: 50 }
         ];
 
-        otherDepts.forEach((dept, index) => {
-            const prefix = dept.split(' ').map(w => w[0]).join('').toUpperCase();
-            for (let i = 1; i <= 10; i++) {
-                students.push({
-                    name: `${prefix} Student ${i}`,
-                    email: `${prefix.toLowerCase()}student${i}@${prefix.toLowerCase()}.com`,
-                    password: 'student123',
-                    role: 'student',
-                    registerNumber: `7376262${prefix}${100 + i}`,
-                    department: dept,
-                    year: 'I',
-                });
-            }
-        });
+        let totalAdded = 0;
 
-        // Loop through and create each student to ensure passwords get hashed
-        // Using Promise.all with chunks or just a loop for simplicity in a one-time route
-        for (const studentData of students) {
-            // Check if already exists to avoid errors on duplicate regNo or email
-            const exists = await User.findOne({ $or: [{ email: studentData.email }, { registerNumber: studentData.registerNumber }] });
-            if (!exists) {
-                await User.create(studentData);
+        for (const dept of departments) {
+            for (let i = 1; i <= dept.count; i++) {
+                const regNo = `7376262${dept.prefix}${300 + i}`;
+                const email = `${dept.prefix.toLowerCase()}${300 + i}@gmail.com`;
+                
+                const exists = await User.findOne({ $or: [{ email }, { registerNumber: regNo }] });
+                if (!exists) {
+                    await User.create({
+                        name: getRandomName(),
+                        email: email,
+                        password: 'student123',
+                        role: 'student',
+                        registerNumber: regNo,
+                        department: dept.name,
+                        year: 'I',
+                    });
+                    totalAdded++;
+                } else if (exists.name.includes('Student')) {
+                    // Update generic names to realistic names
+                    exists.name = getRandomName();
+                    await exists.save();
+                }
             }
         }
         
-        res.json({ success: true, message: `✅ Successfully ensured 250 IT students and extra students for other departments exist.` });
+        res.json({ success: true, message: `✅ Bulk operation complete. Added ${totalAdded} new students and updated generic names.` });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
