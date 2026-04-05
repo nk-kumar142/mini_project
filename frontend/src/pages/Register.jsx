@@ -85,7 +85,9 @@ const Register = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (formData.password !== formData.confirmPassword) {
+        const pwd = formData.password.trim();
+        const cpwd = formData.confirmPassword.trim();
+        if (pwd !== cpwd) {
             return toast.error("Passwords don't match!");
         }
         setIsLoading(true);
