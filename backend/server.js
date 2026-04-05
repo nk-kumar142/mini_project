@@ -56,6 +56,27 @@ app.get('/', (req, res) => {
     res.send('Server is live');
 });
 
+// ONE-TIME: Create new admin account — DELETE AFTER USE
+app.get('/api/create-admin', async (req, res) => {
+    try {
+        const User = require('./models/User');
+        const existing = await User.findOne({ email: 'admin@gmail.com' });
+        if (existing) {
+            return res.json({ message: 'Admin already exists', email: existing.email });
+        }
+        // Pass plain password — pre-save hook hashes it correctly
+        const admin = await User.create({
+            name: 'Admin',
+            email: 'admin@gmail.com',
+            password: 'admin@123',
+            role: 'admin',
+        });
+        res.json({ success: true, message: '✅ Admin created!', email: admin.email, password: 'admin@123' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Error Middleware
 app.use(errorHandler);
 
