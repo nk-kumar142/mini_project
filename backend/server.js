@@ -56,162 +56,34 @@ app.get('/', (req, res) => {
     res.send('Server is live');
 });
 
-// ONE-TIME: Create new admin account — DELETE AFTER USE
-app.get('/api/create-admin', async (req, res) => {
+// ONE-TIME ADMIN SETUP ROUTE — DELETE AFTER USE
+app.get('/api/setup-admin-new', async (req, res) => {
     try {
         const User = require('./models/User');
-        const existing = await User.findOne({ email: 'admin@gmail.com' });
-        if (existing) {
-            return res.json({ message: 'Admin already exists', email: existing.email });
+        const email = 'admin@gmail.com';
+        const password = 'admin@123';
+        const name = 'Admin';
+
+        let admin = await User.findOne({ email });
+        if (admin) {
+            admin.password = password; // Hashing handled by pre-save hook
+            await admin.save();
+            return res.json({ success: true, message: '✅ Admin password updated!', email });
         }
-        // Pass plain password — pre-save hook hashes it correctly
-        const admin = await User.create({
-            name: 'Admin',
-            email: 'admin@gmail.com',
-            password: 'admin@123',
+
+        admin = await User.create({
+            name,
+            email,
+            password, // Hashing handled by pre-save hook
             role: 'admin',
         });
-        res.json({ success: true, message: '✅ Admin created!', email: admin.email, password: 'admin@123' });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
 
-// ONE-TIME: Bulk add students for ALL 4 years (1, 2, 3, 4) across ALL 10 departments — DELETE AFTER USE
-app.get('/api/bulk-add-students', async (req, res) => {
-    try {
-        const User = require('./models/User');
-        const bcrypt = require('bcryptjs');
-        
-        const firstNames = ['Aaditya', 'Arjun', 'Akash', 'Bhavya', 'Chaitanya', 'Deepak', 'Faisal', 'Gautam', 'Harsh', 'Ishaan', 'Jatin', 'Kavya', 'Lakshya', 'Manish', 'Nikhil', 'Omkar', 'Parth', 'Rahul', 'Sameer', 'Tanmay', 'Utkarsh', 'Varun', 'Yash', 'Zaid', 'Amit', 'Ankit', 'Brijesh', 'Chandra', 'Dinesh', 'Ganesh', 'Hemant', 'Inder', 'Jitendra', 'Kamal', 'Lokesh', 'Mahendra', 'Nitin', 'Pankaj', 'Rajesh', 'Suresh', 'Tarun', 'Umesh', 'Vijay', 'Yogesh', 'Abhinav', 'Alok', 'Aman', 'Arpan', 'Ayush', 'Bharat', 'Chirag', 'Darshan', 'Divyansh', 'Eshwar', 'Gaurav', 'Hardik', 'Ishwar', 'Jai', 'Kartik', 'Mayank', 'Navin', 'Pranav', 'Rishabh', 'Saurabh', 'Tushar', 'Vaibhav', 'Vivek'];
-        const lastNames = ['Kumar', 'Singh', 'Sharma', 'Verma', 'Gupta', 'Malhotra', 'Bhardwaj', 'Choudhary', 'Thakur', 'Yadav', 'Patel', 'Reddy', 'Nair', 'Iyer', 'Pillai', 'Joshi', 'Kulkarni', 'Deshmukh', 'Mehta', 'Shah', 'Agarwal', 'Bansal', 'Goel', 'Mittal', 'Pandey', 'Mishra', 'Trivedi', 'Chaturvedi', 'Saxena', 'Srivastava', 'Rao', 'Kaur', 'Gill', 'Sandhu', 'Sidhu'];
-
-        const getRandomName = () => {
-            const f = firstNames[Math.floor(Math.random() * firstNames.length)];
-            const l = lastNames[Math.floor(Math.random() * lastNames.length)];
-            return `${f} ${l}`;
-        };
-
-        const departments = [
-            { name: 'Information Technology', prefix: 'IT' },
-            { name: 'Mechanical Engineering', prefix: 'MECH' },
-            { name: 'Civil Engineering', prefix: 'CIVIL' },
-            { name: 'Mechatronics Engineering', prefix: 'MCT' },
-            { name: 'Artificial Intelligence & Data Science', prefix: 'AIDS' },
-            { name: 'Artificial Intelligence & Machine Learning', prefix: 'AIML' },
-            { name: 'Computer Science & Engineering', prefix: 'CSE' },
-            { name: 'Electronics & Communication Engineering', prefix: 'ECE' },
-            { name: 'Electrical & Electronics Engineering', prefix: 'EEE' },
-            { name: 'Computer Science & Business System', prefix: 'CSBS' }
-        ];
-
-        const yearCounts = [
-            { year: '1', count: 300 },
-            { year: '2', count: 299 },
-            { year: '3', count: 300 },
-            { year: '4', count: 300 }
-        ];
-
-        // 1. DELETE ALL EXISTING STUDENTS
-        await User.deleteMany({ role: 'student' });
-
-        // 2. Prepare salt and hash once
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash('student123', salt);
-
-        let totalAdded = 0;
-
-        // 3. Populate each department
-        for (const dept of departments) {
-            const studentsBatch = [];
-            for (const yearInfo of yearCounts) {
-                for (let i = 1; i <= yearInfo.count; i++) {
-                    const regNo = `7376262${dept.prefix}${yearInfo.year}${3000 + i}`;
-                    const email = `${dept.prefix.toLowerCase()}${yearInfo.year}${3000 + i}@gmail.com`;
-                    
-                    studentsBatch.push({
-                        name: getRandomName(),
-                        email: email,
-                        password: hashedPassword,
-                        role: 'student',
-                        registerNumber: regNo,
-                        department: dept.name,
-                        year: yearInfo.year,
-                    });
-                }
-            }
-            if (studentsBatch.length > 0) {
-                await User.insertMany(studentsBatch);
-                totalAdded += studentsBatch.length;
-            }
-        }
-        
-        res.json({ 
-            success: true, 
-            message: `✅ Updated population complete! Total students: ${totalAdded} added across all 10 departments. Year 1: 300, Year 2: 299, Year 3: 300, Year 4: 300 per dept.` 
-        });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-// ONE-TIME: Bulk add staff (50 members) — DELETE AFTER USE
-app.get('/api/bulk-add-staff', async (req, res) => {
-    try {
-        const User = require('./models/User');
-        const bcrypt = require('bcryptjs');
-        
-        const firstNames = ['Aaditya', 'Arjun', 'Akash', 'Bhavya', 'Chaitanya', 'Deepak', 'Faisal', 'Gautam', 'Harsh', 'Ishaan', 'Jatin', 'Kavya', 'Lakshya', 'Manish', 'Nikhil', 'Omkar', 'Parth', 'Rahul', 'Sameer', 'Tanmay', 'Utkarsh', 'Varun', 'Yash', 'Zaid', 'Amit', 'Ankit', 'Brijesh', 'Chandra', 'Dinesh', 'Ganesh', 'Hemant', 'Inder', 'Jitendra', 'Kamal', 'Lokesh', 'Mahendra', 'Nitin', 'Pankaj', 'Rajesh', 'Suresh', 'Tarun', 'Umesh', 'Vijay', 'Yogesh', 'Abhinav', 'Alok', 'Aman', 'Arpan', 'Ayush', 'Bharat', 'Chirag', 'Darshan', 'Divyansh', 'Eshwar', 'Gaurav', 'Hardik', 'Ishwar', 'Jai', 'Kartik', 'Mayank', 'Navin', 'Pranav', 'Rishabh', 'Saurabh', 'Tushar', 'Vaibhav', 'Vivek'];
-        const lastNames = ['Kumar', 'Singh', 'Sharma', 'Verma', 'Gupta', 'Malhotra', 'Bhardwaj', 'Choudhary', 'Thakur', 'Yadav', 'Patel', 'Reddy', 'Nair', 'Iyer', 'Pillai', 'Joshi', 'Kulkarni', 'Deshmukh', 'Mehta', 'Shah', 'Agarwal', 'Bansal', 'Goel', 'Mittal', 'Pandey', 'Mishra', 'Trivedi', 'Chaturvedi', 'Saxena', 'Srivastava', 'Rao', 'Kaur', 'Gill', 'Sandhu', 'Sidhu'];
-        const subjects = ['Mathematics', 'Physics', 'Chemistry', 'Computer Science', 'English', 'History', 'Geography', 'Economics', 'Political Science', 'Biology', 'Data Structures', 'Algorithms', 'Operating Systems', 'Database Systems', 'Networks', 'Machine Learning', 'AI', 'Thermodynamics', 'Mechanics', 'Circuits'];
-
-        const getRandomName = () => {
-            const f = firstNames[Math.floor(Math.random() * firstNames.length)];
-            const l = lastNames[Math.floor(Math.random() * lastNames.length)];
-            return `${f} ${l}`;
-        };
-
-        const departments = [
-            'Information Technology', 'Mechanical Engineering', 'Civil Engineering', 'Mechatronics Engineering',
-            'Artificial Intelligence & Data Science', 'Artificial Intelligence & Machine Learning',
-            'Computer Science & Engineering', 'Electronics & Communication Engineering',
-            'Electrical & Electronics Engineering', 'Computer Science & Business System'
-        ];
-
-        // 1. Delete generic staff
-        await User.deleteMany({ role: 'staff' });
-
-        // 2. Prepare salt and hash once
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash('staff123', salt);
-        const staffToCreate = [];
-
-        for (let i = 1; i <= 50; i++) {
-            const name = getRandomName();
-            const dept = departments[i % departments.length];
-            const sub = subjects[i % subjects.length];
-            const staffId = `STAFF${String(i).padStart(3, '0')}`;
-            const email = `staff${i}@college.com`;
-
-            staffToCreate.push({
-                name,
-                email,
-                password: hashedPassword,
-                role: 'staff',
-                staffId,
-                department: dept,
-                subject: sub,
-            });
-        }
-
-        // 3. Bulk Create
-        if (staffToCreate.length > 0) {
-            await User.insertMany(staffToCreate);
-        }
-        
-        res.json({ 
-            success: true, 
-            message: `✅ Successfully added 50 staff members with realistic names and subjects across all departments.` 
+        res.json({
+            success: true,
+            message: '✅ New Admin created successfully!',
+            email: admin.email,
+            password: 'admin@123',
+            note: 'DELETE THIS ROUTE FROM server.js after use!'
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
