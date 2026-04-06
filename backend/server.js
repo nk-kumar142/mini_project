@@ -106,10 +106,10 @@ app.get('/api/bulk-add-students', async (req, res) => {
         ];
 
         const yearCounts = [
-            { year: '1', count: 250 },
-            { year: '2', count: 300 },
-            { year: '3', count: 259 },
-            { year: '4', count: 310 }
+            { year: '1', count: 300 },
+            { year: '2', count: 299 },
+            { year: '3', count: 300 },
+            { year: '4', count: 300 }
         ];
 
         // 1. DELETE ALL EXISTING STUDENTS
@@ -148,7 +148,7 @@ app.get('/api/bulk-add-students', async (req, res) => {
         
         res.json({ 
             success: true, 
-            message: `✅ Perfect population complete! Total students: ${totalAdded} added across all 10 departments. Year 1: 250, Year 2: 300, Year 3: 259, Year 4: 310 per dept.` 
+            message: `✅ Updated population complete! Total students: ${totalAdded} added across all 10 departments. Year 1: 300, Year 2: 299, Year 3: 300, Year 4: 300 per dept.` 
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
