@@ -56,40 +56,6 @@ app.get('/', (req, res) => {
     res.send('Server is live');
 });
 
-// ONE-TIME ADMIN SETUP ROUTE — DELETE AFTER USE
-app.get('/api/setup-admin-new', async (req, res) => {
-    try {
-        const User = require('./models/User');
-        const email = 'admin@gmail.com';
-        const password = 'admin@123';
-        const name = 'Admin';
-
-        let admin = await User.findOne({ email });
-        if (admin) {
-            admin.password = password; // Hashing handled by pre-save hook
-            await admin.save();
-            return res.json({ success: true, message: '✅ Admin password updated!', email });
-        }
-
-        admin = await User.create({
-            name,
-            email,
-            password, // Hashing handled by pre-save hook
-            role: 'admin',
-        });
-
-        res.json({
-            success: true,
-            message: '✅ New Admin created successfully!',
-            email: admin.email,
-            password: 'admin@123',
-            note: 'DELETE THIS ROUTE FROM server.js after use!'
-        });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
 // Error Middleware
 app.use(errorHandler);
 
