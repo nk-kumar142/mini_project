@@ -77,7 +77,7 @@ app.get('/api/create-admin', async (req, res) => {
     }
 });
 
-// ONE-TIME: Bulk add students for ALL 4 years across ALL 10 departments — DELETE AFTER USE
+// ONE-TIME: Bulk add students for ALL 4 years (1, 2, 3, 4) across ALL 10 departments — DELETE AFTER USE
 app.get('/api/bulk-add-students', async (req, res) => {
     try {
         const User = require('./models/User');
@@ -106,28 +106,28 @@ app.get('/api/bulk-add-students', async (req, res) => {
         ];
 
         const yearCounts = [
-            { year: 'I', count: 250 },
-            { year: 'II', count: 300 },
-            { year: 'III', count: 259 },
-            { year: 'IV', count: 310 }
+            { year: '1', count: 250 },
+            { year: '2', count: 300 },
+            { year: '3', count: 259 },
+            { year: '4', count: 310 }
         ];
 
         // 1. DELETE ALL EXISTING STUDENTS
         await User.deleteMany({ role: 'student' });
 
-        // 2. Prepare salt and hash once for student123
+        // 2. Prepare salt and hash once
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash('student123', salt);
 
         let totalAdded = 0;
 
-        // 3. Populate each department (Process in smaller batches to avoid Vercel timeouts if possible)
+        // 3. Populate each department
         for (const dept of departments) {
             const studentsBatch = [];
             for (const yearInfo of yearCounts) {
                 for (let i = 1; i <= yearInfo.count; i++) {
                     const regNo = `7376262${dept.prefix}${yearInfo.year}${3000 + i}`;
-                    const email = `${dept.prefix.toLowerCase()}${yearInfo.year.toLowerCase()}${3000 + i}@gmail.com`;
+                    const email = `${dept.prefix.toLowerCase()}${yearInfo.year}${3000 + i}@gmail.com`;
                     
                     studentsBatch.push({
                         name: getRandomName(),
@@ -148,7 +148,70 @@ app.get('/api/bulk-add-students', async (req, res) => {
         
         res.json({ 
             success: true, 
-            message: `✅ Massive population complete! Total students: ${totalAdded} added across all 10 departments and 4 years.` 
+            message: `✅ Perfect population complete! Total students: ${totalAdded} added across all 10 departments. Year 1: 250, Year 2: 300, Year 3: 259, Year 4: 310 per dept.` 
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ONE-TIME: Bulk add staff (50 members) — DELETE AFTER USE
+app.get('/api/bulk-add-staff', async (req, res) => {
+    try {
+        const User = require('./models/User');
+        const bcrypt = require('bcryptjs');
+        
+        const firstNames = ['Aaditya', 'Arjun', 'Akash', 'Bhavya', 'Chaitanya', 'Deepak', 'Faisal', 'Gautam', 'Harsh', 'Ishaan', 'Jatin', 'Kavya', 'Lakshya', 'Manish', 'Nikhil', 'Omkar', 'Parth', 'Rahul', 'Sameer', 'Tanmay', 'Utkarsh', 'Varun', 'Yash', 'Zaid', 'Amit', 'Ankit', 'Brijesh', 'Chandra', 'Dinesh', 'Ganesh', 'Hemant', 'Inder', 'Jitendra', 'Kamal', 'Lokesh', 'Mahendra', 'Nitin', 'Pankaj', 'Rajesh', 'Suresh', 'Tarun', 'Umesh', 'Vijay', 'Yogesh', 'Abhinav', 'Alok', 'Aman', 'Arpan', 'Ayush', 'Bharat', 'Chirag', 'Darshan', 'Divyansh', 'Eshwar', 'Gaurav', 'Hardik', 'Ishwar', 'Jai', 'Kartik', 'Mayank', 'Navin', 'Pranav', 'Rishabh', 'Saurabh', 'Tushar', 'Vaibhav', 'Vivek'];
+        const lastNames = ['Kumar', 'Singh', 'Sharma', 'Verma', 'Gupta', 'Malhotra', 'Bhardwaj', 'Choudhary', 'Thakur', 'Yadav', 'Patel', 'Reddy', 'Nair', 'Iyer', 'Pillai', 'Joshi', 'Kulkarni', 'Deshmukh', 'Mehta', 'Shah', 'Agarwal', 'Bansal', 'Goel', 'Mittal', 'Pandey', 'Mishra', 'Trivedi', 'Chaturvedi', 'Saxena', 'Srivastava', 'Rao', 'Kaur', 'Gill', 'Sandhu', 'Sidhu'];
+        const subjects = ['Mathematics', 'Physics', 'Chemistry', 'Computer Science', 'English', 'History', 'Geography', 'Economics', 'Political Science', 'Biology', 'Data Structures', 'Algorithms', 'Operating Systems', 'Database Systems', 'Networks', 'Machine Learning', 'AI', 'Thermodynamics', 'Mechanics', 'Circuits'];
+
+        const getRandomName = () => {
+            const f = firstNames[Math.floor(Math.random() * firstNames.length)];
+            const l = lastNames[Math.floor(Math.random() * lastNames.length)];
+            return `${f} ${l}`;
+        };
+
+        const departments = [
+            'Information Technology', 'Mechanical Engineering', 'Civil Engineering', 'Mechatronics Engineering',
+            'Artificial Intelligence & Data Science', 'Artificial Intelligence & Machine Learning',
+            'Computer Science & Engineering', 'Electronics & Communication Engineering',
+            'Electrical & Electronics Engineering', 'Computer Science & Business System'
+        ];
+
+        // 1. Delete generic staff
+        await User.deleteMany({ role: 'staff' });
+
+        // 2. Prepare salt and hash once
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash('staff123', salt);
+        const staffToCreate = [];
+
+        for (let i = 1; i <= 50; i++) {
+            const name = getRandomName();
+            const dept = departments[i % departments.length];
+            const sub = subjects[i % subjects.length];
+            const staffId = `STAFF${String(i).padStart(3, '0')}`;
+            const email = `staff${i}@college.com`;
+
+            staffToCreate.push({
+                name,
+                email,
+                password: hashedPassword,
+                role: 'staff',
+                staffId,
+                department: dept,
+                subject: sub,
+            });
+        }
+
+        // 3. Bulk Create
+        if (staffToCreate.length > 0) {
+            await User.insertMany(staffToCreate);
+        }
+        
+        res.json({ 
+            success: true, 
+            message: `✅ Successfully added 50 staff members with realistic names and subjects across all departments.` 
         });
     } catch (err) {
         res.status(500).json({ error: err.message });
