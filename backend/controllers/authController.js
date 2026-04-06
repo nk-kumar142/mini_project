@@ -72,17 +72,32 @@ const registerUser = async (req, res) => {
 const authUser = async (req, res) => {
     const { identifier, password, role } = req.body;
 
-    // Build query based on role
-    // Student  → login with email,     password = roll number
-    // Staff    → login with email,     password = registered password
-    // Admin    → login with email,     password = admin password
+    // Build query based on role (case-insensitive and trimmed)
+    const escapedIdentifier = identifier.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const identifierRegex = new RegExp(`^${escapedIdentifier}$`, 'i');
+
     let query;
     if (role === 'student') {
-        query = { email: identifier, role: 'student' };
+        // For students, allow login via email OR register number (case-insensitive)
+        query = {
+            $or: [
+                { email: identifierRegex },
+                { registerNumber: identifierRegex }
+            ],
+            role: 'student'
+        };
     } else if (role === 'staff') {
-        query = { email: identifier, role: 'staff' };
+        // For staff, allow login via email OR staff ID (case-insensitive)
+        query = {
+            $or: [
+                { email: identifierRegex },
+                { staffId: identifierRegex }
+            ],
+            role: 'staff'
+        };
     } else {
-        query = { email: identifier, role: 'admin' };
+        // Admin: login with email (case-insensitive)
+        query = { email: identifierRegex, role: 'admin' };
     }
 
     const user = await User.findOne(query);
@@ -90,7 +105,7 @@ const authUser = async (req, res) => {
     if (!user) {
         res.status(401);
         if (role === 'student') {
-            throw new Error('No student found with this email address');
+            throw new Error('No student found with this email or register number.');
         } else if (role === 'staff') {
             throw new Error('No staff account found with this email');
         } else {
@@ -98,7 +113,17 @@ const authUser = async (req, res) => {
         }
     }
 
-    const passwordMatch = await user.matchPassword(password);
+    // Normal bcrypt check
+    let passwordMatch = await user.matchPassword(password);
+
+    // Smart fallback for students: if the entered password matches the register number (case-insensitive)
+    if (!passwordMatch && role === 'student') {
+        // Compare entered password (uppercase) with stored register number (uppercase)
+        if (user.registerNumber && password.trim().toUpperCase() === user.registerNumber.toUpperCase()) {
+            passwordMatch = true;
+        }
+    }
+
     if (!passwordMatch) {
         res.status(401);
         if (role === 'student') {

@@ -71,6 +71,28 @@ const Login = () => {
     const { login } = useAuth();
     const navigate = useNavigate();
 
+    const demoCredentials = {
+        student: { id: 'it13001@gmail.com', pass: '7376262IT13001' },
+        staff: { id: 'arun.it@staff.edu', pass: 'staff@123' },
+        admin: { id: 'admin@example.com', pass: 'admin@123' }
+    };
+
+    const handleAutoFill = () => {
+        const creds = demoCredentials[role];
+        if (creds) {
+            setIdentifier(creds.id);
+            setPassword(creds.pass);
+            toast.success(`${role.charAt(0).toUpperCase() + role.slice(1)} demo credentials filled!`, {
+                icon: '⚡',
+                style: {
+                    borderRadius: '10px',
+                    background: '#1e3a8a',
+                    color: '#fff',
+                },
+            });
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setIsLoading(true);
@@ -171,12 +193,12 @@ const Login = () => {
                                 <Mail size={15} className="text-[#1e3a8a] dark:text-blue-400" />
                             </div>
                             <input
-                                type="email"
+                                type="text"
                                 required
                                 value={identifier}
                                 onChange={(e) => setIdentifier(e.target.value)}
                                 className="w-full bg-white dark:bg-gray-800 border-2 border-[#e0e0e0] dark:border-gray-700 rounded-full py-3.5 pl-16 pr-5 outline-none focus:border-[#1e3a8a] dark:focus:border-blue-500 focus:shadow-[0_0_0_4px_rgba(30,58,138,0.1)] dark:focus:shadow-[0_0_0_4px_rgba(59,130,246,0.1)] transition-all text-sm font-semibold text-[#37474f] dark:text-white placeholder:text-[#b0bec5] dark:placeholder:text-gray-500"
-                                placeholder={role === 'student' ? 'Email or phone number' : 'Email address'}
+                                placeholder={role === 'student' ? 'Email or Register Number' : role === 'staff' ? 'Email or Staff ID' : 'Email address'}
                             />
                         </div>
 
@@ -228,6 +250,41 @@ const Login = () => {
                             Create one now
                         </Link>
                     </p>
+
+                    {/* Demo Credentials Box */}
+                    <div className="mt-8 p-4 rounded-2xl bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/30 backdrop-blur-sm transition-all duration-300">
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2 text-[#1e3a8a] dark:text-blue-400">
+                                <div className="p-1 rounded-md bg-blue-100 dark:bg-blue-800/40">
+                                    <Shield size={14} />
+                                </div>
+                                <span className="text-xs font-bold uppercase tracking-wider">Demo Access</span>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={handleAutoFill}
+                                className="text-[10px] font-bold bg-[#1e3a8a] text-white px-3 py-1 rounded-full hover:bg-[#172554] transition-colors shadow-sm active:scale-95"
+                            >
+                                Auto-fill
+                            </button>
+                        </div>
+                        <div className="space-y-1.5 pt-1">
+                            <div className="flex items-center justify-between text-[11px]">
+                                <span className="text-[#78909c] dark:text-gray-400 font-medium tracking-tight">Email:</span>
+                                <code className="bg-white dark:bg-gray-800 px-1.5 py-0.5 rounded border border-blue-100/50 dark:border-gray-700 text-[#1e3a8a] dark:text-blue-300 font-bold">
+                                    {demoCredentials[role].id}
+                                </code>
+                            </div>
+                            <div className="flex items-center justify-between text-[11px]">
+                                <span className="text-[#78909c] dark:text-gray-400 font-medium tracking-tight">
+                                    {role === 'student' ? 'Reg No:' : 'Password:'}
+                                </span>
+                                <code className="bg-white dark:bg-gray-800 px-1.5 py-0.5 rounded border border-blue-100/50 dark:border-gray-700 text-[#1e3a8a] dark:text-blue-300 font-bold">
+                                    {demoCredentials[role].pass}
+                                </code>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Right: Illustration */}
